@@ -1,8 +1,8 @@
-const CACHE = 'absensi-cache-v17';
+const CACHE = 'absensi-cache-v18';
 const ASSETS = [
-  '/', '/index.html', '/settings.html', '/panduan.html', '/dashboard.html', '/about.html', '/styles.css', '/manifest.webmanifest',
-  '/js/db.js','/js/app.js','/js/sync.js','/js/qr.js','/js/settings.js','/js/dashboard.js','/js/ui.js',
-  '/js/vendor/qrcode.min.js','/js/vendor/qrcode-generator.min.js','/js/vendor/dexie.min.js',
+  './', 'index.html', 'settings.html', 'panduan.html', 'dashboard.html', 'about.html', 'styles.css', 'manifest.webmanifest',
+  'js/db.js','js/app.js','js/sync.js','js/qr.js','js/settings.js','js/dashboard.js','js/ui.js',
+  'js/vendor/qrcode.min.js','js/vendor/qrcode-generator.min.js','js/vendor/dexie.min.js',
   '/assets/icon-192.png','/assets/icon-512.png',
   // CDN dependencies to improve offline capability after first install
   'https://unpkg.com/html5-qrcode',
@@ -37,8 +37,8 @@ self.addEventListener('fetch', e=>{
     e.respondWith(
       caches.match(req).then(r=> r || fetch(req).then(resp=>{
         const copy = resp.clone(); caches.open(CACHE).then(c=>c.put(req, copy)); return resp;
-      }).catch(()=> caches.match('/index.html')))
-    );
+      }).catch(()=> caches.match('index.html')))
+  );
     return;
   }
   // Cross-origin: network-first with cache fallback (no HTML fallback)

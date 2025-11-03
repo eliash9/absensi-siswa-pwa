@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Absensi Siswa PWA (Offline)</title>
   <meta name="theme-color" content="#0ea5e9" />
-  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
-  <link rel="stylesheet" href="/styles.css">
-  <script defer src="/js/vendor/dexie.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="js/vendor/dexie.min.js"></script>
   <script defer src="https://unpkg.com/html5-qrcode"></script>
-  <script type="module" src="/js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
   
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -18,9 +18,9 @@
     <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
       <h1 class="font-semibold text-lg">Absensi Siswa (PWA)</h1>
       <div class="flex items-center gap-3">
-        <a href="/dashboard.html" class="text-blue-600 hover:underline text-sm">Dashboard</a>
-        <a href="/panduan.html" class="text-blue-600 hover:underline text-sm">Panduan</a>
-        <a href="/settings.html" class="text-blue-600 hover:underline text-sm">Pengaturan</a>
+        <a href="dashboard.html" class="text-blue-600 hover:underline text-sm">Dashboard</a>
+        <a href="panduan.html" class="text-blue-600 hover:underline text-sm">Panduan</a>
+        <a href="settings.html" class="text-blue-600 hover:underline text-sm">Pengaturan</a>
         <span id="net-badge" class="px-2 py-1 text-xs rounded bg-gray-200">Offline</span>
         <span id="unsynced-badge" class="px-2 py-1 text-xs rounded bg-yellow-100">Belum sinkron: 0</span>
       </div>
@@ -185,13 +185,13 @@
 
   <footer class="max-w-5xl mx-auto px-4 py-6 text-xs text-gray-500">
     Offline-first • Data lokal di perangkat • Sinkron saat online • 
-    <a href="/about.html" class="text-blue-600 hover:underline">Tentang</a>
+    <a href="about.html" class="text-blue-600 hover:underline">Tentang</a>
   </footer>
 
   <script>
     // Daftarkan service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
+      navigator.serviceWorker.register('sw.js', { scope: './' });
     }
     // Auto-refresh datalist master saat kembali dari tab lain
     document.addEventListener('visibilitychange', ()=>{

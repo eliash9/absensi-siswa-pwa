@@ -255,7 +255,7 @@ function bindUI(){
     if(r?.error){
       if(r.reason === 'missing_or_invalid_url'){
         if(confirm('URL Web App belum disetel atau tidak valid. Buka Pengaturan sekarang?')){
-          location.href = '/settings.html';
+          location.href = 'settings.html';
         }
       }else if(r.reason === 'offline'){
         showToast('Perangkat offline. Coba lagi saat online.','error');
