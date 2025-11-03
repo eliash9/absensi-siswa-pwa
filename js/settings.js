@@ -262,7 +262,7 @@ async function getQR(){
   if(QR) return QR;
   // Try local vendor (UMD) first for offline
   try{
-    await loadScript('./js/vendor/qrcode.min.js');
+    await loadScript('./vendor/qrcode.min.js');
     if(window.QRCode && window.QRCode.toCanvas){ return window.QRCode; }
   }catch(err){ console.warn('Gagal load vendor qrcode.min.js', err); }
   // Fallback to CDN ESM if available
