@@ -29,7 +29,12 @@
 
   <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
     <!-- MODE & FORM KONTROL -->
-    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+    <section class="bg-white shadow rounded-xl p-4 space-y-4" data-collapsible data-default-collapsed="false">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="font-semibold">Kontrol</h2>
+        <button type="button" class="btn-outline collapsible-toggle">Buka</button>
+      </div>
+      <div class="collapsible-body space-y-4">
       <div class="grid md:grid-cols-3 gap-4">
         <div>
           <label class="block text-sm mb-1">Mode</label>
@@ -79,36 +84,56 @@
           <button id="btnSaveTemplate" class="btn-outline">Simpan Template</button>
         </div>
       </div>
+      </div>
     </section>
 
     <!-- AREA SCAN -->
-    <section class="bg-white shadow rounded-xl p-4 overflow-hidden">
+    <section class="bg-white shadow rounded-xl p-4 overflow-hidden" data-collapsible data-default-collapsed="true">
       <div class="flex items-center justify-between mb-2">
         <h2 class="font-semibold">Scan QR</h2>
         <div class="flex items-center gap-2">
           <button id="btnStartQR" class="btn">Scan QR</button>
           <button id="btnStopQR" class="btn-secondary">Stop Scan</button>
+          <button type="button" class="btn-outline collapsible-toggle">Buka</button>
         </div>
       </div>
-      <div id="reader" class="rounded border"></div>
+      <div id="reader" class="rounded border collapsible-body hidden"></div>
     </section>
 
     <!-- INPUT MANUAL -->
-    <section class="bg-white shadow rounded-xl p-4 overflow-hidden">
-      <h2 class="font-semibold mb-3">Input Manual</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3">
-        <div class="col-span-2 md:col-span-2 min-w-0">
+    <section class="bg-white shadow rounded-xl p-4 overflow-hidden" data-collapsible data-default-collapsed="true">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Input Manual</h2>
+        <button type="button" class="btn-outline collapsible-toggle">Buka</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 collapsible-body hidden">
+        <div class="sm:col-span-2 md:col-span-2 min-w-0">
+          <label class="block text-sm mb-1">ID Siswa</label>
           <input id="siswaId" list="siswaList" class="border rounded px-3 py-2 w-full" placeholder="Cari ID Siswa" />
           <datalist id="siswaList"></datalist>
         </div>
-        <input id="namaSiswa" class="border rounded px-3 py-2 w-full" placeholder="Nama Siswa" readonly />
-        <select id="status" class="border rounded px-3 py-2 w-full">
-          <option>Hadir</option><option>Terlambat</option><option>Izin</option><option>Sakit</option><option>Alpa</option>
-        </select>
-        <input id="alasan" class="border rounded px-3 py-2 w-full" placeholder="Alasan/Keterangan (opsional)" />
-        <input id="foto" type="file" accept="image/*" class="border rounded px-3 py-2 w-full md:w-auto" />
-        <button id="btnAbsen" class="btn">Catat</button>
-        <button id="btnExportCSV" class="btn-outline">Export CSV</button>
+        <div class="sm:col-span-2 md:col-span-2">
+          <label class="block text-sm mb-1">Nama</label>
+          <input id="namaSiswa" class="border rounded px-3 py-2 w-full" placeholder="Nama Siswa" readonly />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Status</label>
+          <select id="status" class="border rounded px-3 py-2 w-full">
+            <option>Hadir</option><option>Terlambat</option><option>Izin</option><option>Sakit</option><option>Alpa</option>
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">Alasan/Keterangan</label>
+          <input id="alasan" class="border rounded px-3 py-2 w-full" placeholder="Opsional" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Foto (opsional)</label>
+          <input id="foto" type="file" accept="image/*" class="border rounded px-3 py-2 w-full md:w-auto" />
+        </div>
+        <div class="sm:col-span-2 md:col-span-4 flex flex-col sm:flex-row gap-2 mt-1">
+          <button id="btnAbsen" class="btn w-full sm:w-auto">Catat</button>
+          <button id="btnExportCSV" class="btn-outline w-full sm:w-auto">Export CSV</button>
+        </div>
       </div>
     </section>
 
@@ -193,6 +218,18 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js', { scope: './' });
     }
+    // Collapsible cards
+    document.addEventListener('DOMContentLoaded', ()=>{
+      document.querySelectorAll('[data-collapsible]').forEach(sec=>{
+        const btn = sec.querySelector('.collapsible-toggle');
+        const body = sec.querySelector('.collapsible-body');
+        if(!btn || !body) return;
+        const setLabel = ()=>{ btn.textContent = body.classList.contains('hidden') ? 'Buka' : 'Tutup'; };
+        if(sec.getAttribute('data-default-collapsed')==='true') body.classList.add('hidden');
+        setLabel();
+        btn.addEventListener('click', ()=>{ body.classList.toggle('hidden'); setLabel(); });
+      });
+    });
     // Auto-refresh datalist master saat kembali dari tab lain
     document.addEventListener('visibilitychange', ()=>{
       if(document.visibilityState==='visible'){

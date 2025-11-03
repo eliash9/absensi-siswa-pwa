@@ -82,7 +82,7 @@ async function renderTable(){
       if(!hay.includes(q)) return false;
     }
     return true;
-  });
+  }).sort((a,b)=> (b.id||0) - (a.id||0));
   const pageSizeEl = document.getElementById('pageSizeSelect');
   const PAGE_SIZE = pageSizeEl ? Number(pageSizeEl.value||25) : 25;
   const total = filtered.length;
