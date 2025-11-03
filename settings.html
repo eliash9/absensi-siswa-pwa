@@ -1,6 +1,18 @@
 <!doctype html>
 <html lang="id">
 <head>
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    (function(){
+      try{
+        var key='theme';
+        var saved=localStorage.getItem(key);
+        var prefersDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme=saved||(prefersDark?'dark':'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      }catch(e){}
+    })();
+  </script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pengaturan & Master Data - Absensi PWA</title>
@@ -8,10 +20,44 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
   <link rel="stylesheet" href="styles.css">
+  <script>
+    (function () {
+      var key = 'theme';
+      function ensureToggle() {
+        if (!document.body || document.getElementById('theme-toggle')) return;
+        var btn = document.createElement('button');
+        btn.id = 'theme-toggle';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', 'Toggle theme');
+        btn.title = 'Toggle theme';
+        function cur() { return document.documentElement.getAttribute('data-theme') || 'light'; }
+        function setIcon(t) { btn.textContent = t === 'dark' ? '☀' : '🌙'; }
+        setIcon(cur());
+        btn.addEventListener('click', function () {
+          var next = cur() === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          try { localStorage.setItem(key, next); } catch (_) {}
+          setIcon(next);
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) {
+            var color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+            meta.setAttribute('content', color || (next === 'dark' ? '#0F172A' : '#F8FAFC'));
+          }
+        });
+        document.body.appendChild(btn);
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureToggle); else ensureToggle();
+    })();
+  </script>
   <script defer src="js/vendor/dexie.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script type="module" src="js/settings.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js?v=19', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
+    }
+  </script>
 </head>
 <body class="bg-gray-50 text-gray-800">
   <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
@@ -40,7 +86,13 @@
           </select>
         </div>
         <div class="flex flex-wrap gap-2 md:col-span-3">
-          <button id="btnSaveSecurity" class="btn">Simpan Keamanan</button>
+          <button id="btnSaveSecurity" class="btn" aria-label="Simpan Keamanan">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 20h14a1 1 0 001-1V9l-5-5H6a1 1 0 00-1 1v15z" />
+              <path d="M9 13h6" />
+            </svg>
+            <span class="hidden sm:inline">Simpan Keamanan</span>
+          </button>
         </div>
       </div>
       <p class="text-xs text-gray-500">Jika dikunci, saat membuka halaman Pengaturan Anda akan diminta memasukkan PIN.</p>
@@ -74,7 +126,13 @@
           </select>
         </div>
         <div class="flex flex-wrap gap-2 md:col-span-3">
-          <button id="btnSavePrefs" class="btn">Simpan Preferensi</button>
+          <button id="btnSavePrefs" class="btn" aria-label="Simpan Preferensi">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 20h14a1 1 0 001-1V9l-5-5H6a1 1 0 00-1 1v15z" />
+              <path d="M9 13h6" />
+            </svg>
+            <span class="hidden sm:inline">Simpan Preferensi</span>
+          </button>
         </div>
       </div>
       <p class="text-xs text-gray-500">Format ini digunakan untuk tampilan UI dan ekspor CSV. Mode Kios mencoba layar penuh dan mencegah layar tidur.</p>
@@ -92,7 +150,14 @@
           <input id="syncEnd" type="date" class="w-full border rounded px-3 py-2" />
         </div>
         <div class="flex flex-wrap gap-2 md:col-span-3">
-          <button id="btnSyncAll" class="btn">Sync Semua</button>
+          <button id="btnSyncAll" class="btn" aria-label="Sync Semua">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7v6h6" />
+              <path d="M20 17v-6h-6" />
+              <path d="M20 17a8 8 0 01-14 2M4 7a8 8 0 0114-2" />
+            </svg>
+            <span class="hidden sm:inline">Sync Semua</span>
+          </button>
           <span id="syncAllInfo" class="text-xs text-gray-500"></span>
         </div>
       </div>
@@ -107,10 +172,36 @@
           <input id="gasUrl" class="w-full border rounded px-3 py-2" placeholder="https://script.google.com/macros/s/.../exec" />
         </div>
         <div class="flex flex-wrap gap-2 md:col-span-6">
-          <button id="btnSaveGas" class="btn">Simpan</button>
-          <button id="btnTestGas" class="btn-outline">Tes</button>
-          <button id="btnSyncMasters" class="btn-outline">Sinkron Master</button>
-          <button id="btnPullMasters" class="btn-outline">Ambil Master dari Sheet</button>
+          <button id="btnSaveGas" class="btn" aria-label="Simpan">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 20h14a1 1 0 001-1V9l-5-5H6a1 1 0 00-1 1v15z" />
+              <path d="M9 13h6" />
+            </svg>
+            <span class="hidden sm:inline">Simpan</span>
+          </button>
+          <button id="btnTestGas" class="btn-outline" aria-label="Tes Koneksi">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="8,5 19,12 8,19" />
+            </svg>
+            <span class="hidden sm:inline">Tes</span>
+          </button>
+          <button id="btnSyncMasters" class="btn-outline" aria-label="Sinkron Master">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7v6h6" />
+              <path d="M20 17v-6h-6" />
+              <path d="M20 17a8 8 0 01-14 2M4 7a8 8 0 0114-2" />
+            </svg>
+            <span class="hidden sm:inline">Sinkron Master</span>
+          </button>
+          <button id="btnPullMasters" class="btn-outline" aria-label="Ambil Master dari Sheet">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v10" />
+              <path d="M12 15l-4-4" />
+              <path d="M12 15l4-4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Ambil Master dari Sheet</span>
+          </button>
         </div>
       </div>
       <p class="text-xs text-gray-500">URL dapat diperoleh dari Apps Script → Deploy Web App. Dipakai saat sinkron.</p>
@@ -126,13 +217,50 @@
         <input id="siswaIdInput" class="border rounded px-3 py-2" placeholder="SISWAID" />
         <input id="siswaNamaInput" class="border rounded px-3 py-2" placeholder="Nama" />
         <input id="siswaKelasInput" class="border rounded px-3 py-2" placeholder="Kelas (opsional)" />
-        <button id="btnAddSiswa" class="btn">Tambah</button>
+        <button id="btnAddSiswa" class="btn" aria-label="Tambah Siswa">
+          <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+          <span class="hidden sm:inline">Tambah</span>
+        </button>
         <div class="flex flex-wrap gap-2 md:col-span-2">
-          <button id="btnImportSiswa" class="btn-outline">Import CSV</button>
+          <button id="btnImportSiswa" class="btn-outline" aria-label="Import CSV Siswa">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v10" />
+              <path d="M12 15l-4-4" />
+              <path d="M12 15l4-4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Import CSV</span>
+          </button>
           <input id="fileImportSiswa" type="file" accept=".csv" class="hidden" />
-          <button id="btnExportSiswa" class="btn-outline">Export CSV</button>
-          <button id="btnTemplateSiswa" class="btn-outline">Unduh Template</button>
-          <button id="btnPrintQrFiltered" class="btn-outline">Cetak QR (Filter)</button>
+          <button id="btnExportSiswa" class="btn-outline" aria-label="Export CSV Siswa">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 16V4" />
+              <path d="M12 4l-4 4" />
+              <path d="M12 4l4 4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Export CSV</span>
+          </button>
+          <button id="btnTemplateSiswa" class="btn-outline" aria-label="Unduh Template Siswa">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v10" />
+              <path d="M12 15l-4-4" />
+              <path d="M12 15l4-4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Unduh Template</span>
+          </button>
+          <button id="btnPrintQrFiltered" class="btn-outline" aria-label="Cetak QR (Filter)">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9V4h12v5" />
+              <rect x="6" y="13" width="12" height="7" rx="2" />
+              <path d="M6 17h12" />
+            </svg>
+            <span class="hidden sm:inline">Cetak QR (Filter)</span>
+          </button>
         </div>
       </div>
       <div class="grid md:grid-cols-3 gap-3">
@@ -162,12 +290,42 @@
       <div class="grid md:grid-cols-4 gap-3">
         <input id="guruIdInput" class="border rounded px-3 py-2" placeholder="GURUID" />
         <input id="guruNamaInput" class="border rounded px-3 py-2" placeholder="Nama" />
-        <button id="btnAddGuru" class="btn">Tambah</button>
+        <button id="btnAddGuru" class="btn" aria-label="Tambah Guru">
+          <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+          <span class="hidden sm:inline">Tambah</span>
+        </button>
         <div class="flex flex-wrap gap-2 md:col-span-2">
-          <button id="btnImportGuru" class="btn-outline">Import CSV</button>
+          <button id="btnImportGuru" class="btn-outline" aria-label="Import CSV Guru">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v10" />
+              <path d="M12 15l-4-4" />
+              <path d="M12 15l4-4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Import CSV</span>
+          </button>
           <input id="fileImportGuru" type="file" accept=".csv" class="hidden" />
-          <button id="btnExportGuru" class="btn-outline">Export CSV</button>
-          <button id="btnTemplateGuru" class="btn-outline">Unduh Template</button>
+          <button id="btnExportGuru" class="btn-outline" aria-label="Export CSV Guru">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 16V4" />
+              <path d="M12 4l-4 4" />
+              <path d="M12 4l4 4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Export CSV</span>
+          </button>
+          <button id="btnTemplateGuru" class="btn-outline" aria-label="Unduh Template Guru">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v10" />
+              <path d="M12 15l-4-4" />
+              <path d="M12 15l4-4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Unduh Template</span>
+          </button>
         </div>
       </div>
       <div class="grid md:grid-cols-3 gap-3">
@@ -196,12 +354,42 @@
       <div class="grid md:grid-cols-4 gap-3">
         <input id="mapelIdInput" class="border rounded px-3 py-2" placeholder="MAPELID" />
         <input id="mapelNamaInput" class="border rounded px-3 py-2" placeholder="Nama Mapel" />
-        <button id="btnAddMapel" class="btn">Tambah</button>
+        <button id="btnAddMapel" class="btn" aria-label="Tambah Mapel">
+          <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+          <span class="hidden sm:inline">Tambah</span>
+        </button>
         <div class="flex flex-wrap gap-2 md:col-span-2">
-          <button id="btnImportMapel" class="btn-outline">Import CSV</button>
+          <button id="btnImportMapel" class="btn-outline" aria-label="Import CSV Mapel">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v10" />
+              <path d="M12 15l-4-4" />
+              <path d="M12 15l4-4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Import CSV</span>
+          </button>
           <input id="fileImportMapel" type="file" accept=".csv" class="hidden" />
-          <button id="btnExportMapel" class="btn-outline">Export CSV</button>
-          <button id="btnTemplateMapel" class="btn-outline">Unduh Template</button>
+          <button id="btnExportMapel" class="btn-outline" aria-label="Export CSV Mapel">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 16V4" />
+              <path d="M12 4l-4 4" />
+              <path d="M12 4l4 4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Export CSV</span>
+          </button>
+          <button id="btnTemplateMapel" class="btn-outline" aria-label="Unduh Template Mapel">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v10" />
+              <path d="M12 15l-4-4" />
+              <path d="M12 15l4-4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Unduh Template</span>
+          </button>
         </div>
       </div>
       <div class="grid md:grid-cols-3 gap-3">
@@ -225,10 +413,34 @@
     <section class="bg-white shadow rounded-xl p-4 space-y-4">
       <h2 class="font-semibold text-lg">Import / Export Gabungan</h2>
       <div class="flex flex-wrap gap-2 items-center">
-        <button id="btnImportCombined" class="btn-outline">Import Gabungan (JSON/ZIP)</button>
+        <button id="btnImportCombined" class="btn-outline" aria-label="Import Gabungan (JSON/ZIP)">
+          <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v10" />
+            <path d="M12 15l-4-4" />
+            <path d="M12 15l4-4" />
+            <path d="M4 20h16" />
+          </svg>
+          <span class="hidden sm:inline">Import Gabungan (JSON/ZIP)</span>
+        </button>
         <input id="fileImportCombined" type="file" accept=".json,.zip" class="hidden" />
-        <button id="btnExportCombinedZip" class="btn-outline">Export Gabungan (ZIP)</button>
-        <button id="btnExportCombinedJson" class="btn-outline">Export Gabungan (JSON)</button>
+        <button id="btnExportCombinedZip" class="btn-outline" aria-label="Export Gabungan (ZIP)">
+          <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4" />
+            <path d="M12 4l-4 4" />
+            <path d="M12 4l4 4" />
+            <path d="M4 20h16" />
+          </svg>
+          <span class="hidden sm:inline">Export Gabungan (ZIP)</span>
+        </button>
+        <button id="btnExportCombinedJson" class="btn-outline" aria-label="Export Gabungan (JSON)">
+          <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4" />
+            <path d="M12 4l-4 4" />
+            <path d="M12 4l4 4" />
+            <path d="M4 20h16" />
+          </svg>
+          <span class="hidden sm:inline">Export Gabungan (JSON)</span>
+        </button>
       </div>
       <p class="text-xs text-gray-500">ZIP berisi: siswa.csv, guru.csv, mapel.csv. JSON berisi objek { siswa, guru, mapel }.</p>
     </section>
@@ -238,7 +450,14 @@
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-lg">Antrian Offline</h2>
         <div class="flex gap-2">
-          <button id="btnSyncQueue" class="btn">Sinkron Sekarang</button>
+          <button id="btnSyncQueue" class="btn" aria-label="Sinkron Sekarang">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7v6h6" />
+              <path d="M20 17v-6h-6" />
+              <path d="M20 17a8 8 0 01-14 2M4 7a8 8 0 0114-2" />
+            </svg>
+            <span class="hidden sm:inline">Sinkron Sekarang</span>
+          </button>
           <span id="queueInfo" class="text-xs text-gray-500"></span>
         </div>
       </div>
@@ -283,7 +502,13 @@
         <input id="templatePJ" class="border rounded px-3 py-2" placeholder="Guru/PJ" />
         <input id="templateLokasi" class="border rounded px-3 py-2" placeholder="Lokasi" />
         <div class="md:col-span-6 flex gap-2">
-          <button id="btnAddTemplate" class="btn">Tambah</button>
+          <button id="btnAddTemplate" class="btn" aria-label="Tambah Template">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+            <span class="hidden sm:inline">Tambah</span>
+          </button>
         </div>
       </div>
       <div class="overflow-x-auto">
@@ -305,9 +530,51 @@
     </section>
   </main>
 
+  <!-- Mobile bottom nav (small screens) -->
+  <nav class="mobile-nav sm:hidden" role="navigation" aria-label="Navigasi bawah">
+    <div class="nav-grid">
+      <a href="index.html" data-path="index.html" aria-label="Absen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="4" width="14" height="16" rx="2" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+        <span class="text-xs">Absen</span>
+      </a>
+      <a href="dashboard.html" data-path="dashboard.html" aria-label="Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h6V4H3zM15 20h6v-8h-6zM3 20h6v-6H3zM15 12h6V4h-6z" />
+        </svg>
+        <span class="text-xs">Dashboard</span>
+      </a>
+      <a href="panduan.html" data-path="panduan.html" aria-label="Panduan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19a2 2 0 002 2h12" />
+          <path d="M20 21V7a2 2 0 00-2-2h-8l-4 4v12" />
+        </svg>
+        <span class="text-xs">Panduan</span>
+      </a>
+      <a href="settings.html" data-path="settings.html" aria-label="Pengaturan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1 1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06A2 2 0 015.94 3.2l.06.06a1.65 1.65 0 001.82.33H8a1.65 1.65 0 001-1.51V2a2 2 0 014 0v.09a1.65 1.65 0 001 1.51h.18a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V8a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+        <span class="text-xs">Pengaturan</span>
+      </a>
+    </div>
+  </nav>
+  <script>
+    (function(){
+      try{
+        var href = location.pathname.split('/').pop() || 'index.html';
+        document.querySelectorAll('.mobile-nav a').forEach(function(a){
+          if(a.getAttribute('data-path') === href){ a.classList.add('active'); }
+        });
+      }catch(e){}
+    })();
+  </script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js', { scope: './' });
+      navigator.serviceWorker.register('sw.js?v=19', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
     }
   </script>
 </body>

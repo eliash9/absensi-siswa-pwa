@@ -1,6 +1,53 @@
 <!doctype html>
 <html lang="id">
 <head>
+  <!-- Theme: Sekolah Tenang (Biru + Hijau) -->
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    // Early theme set to prevent FOUC
+    (function () {
+      try {
+        var key = 'theme';
+        var saved = localStorage.getItem(key);
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = saved || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (_) {}
+    })();
+  </script>
+  
+  <script>
+    // Inject floating toggle to body after DOM loaded
+    (function () {
+      var key = 'theme';
+      function ensureToggle() {
+        if (!document.body || document.getElementById('theme-toggle')) return;
+        var btn = document.createElement('button');
+        btn.id = 'theme-toggle';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', 'Toggle theme');
+        btn.title = 'Toggle theme';
+        function cur() { return document.documentElement.getAttribute('data-theme') || 'light'; }
+        function setIcon(t) { btn.textContent = t === 'dark' ? '☀️' : '🌙'; }
+        setIcon(cur());
+        btn.addEventListener('click', function () {
+          var next = cur() === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          try { localStorage.setItem(key, next); } catch (_) {}
+          setIcon(next);
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) {
+            var color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+            meta.setAttribute('content', color || (next === 'dark' ? '#0F172A' : '#F8FAFC'));
+          }
+        });
+        document.body.appendChild(btn);
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ensureToggle);
+      } else { ensureToggle(); }
+    })();
+  </script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Absensi Siswa PWA (Offline)</title>
@@ -8,6 +55,67 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
   <link rel="stylesheet" href="styles.css">
+  <style id="theme-vars">
+    :root {
+      --color-primary: #2563EB; /* Blue-600 */
+      --color-secondary: #16A34A; /* Green-600 */
+      --color-accent: #F59E0B; /* Amber-500 */
+      --bg: #F8FAFC;            /* Slate-50 */
+      --surface: #FFFFFF;       /* White */
+      --surface-alpha-80: rgba(255, 255, 255, 0.8);
+      --text: #0F172A;          /* Slate-900 */
+      --text-muted: #334155;    /* Slate-600 */
+      --border: #E2E8F0;        /* Slate-200 */
+      --success: #16A34A;
+      --warning: #D97706;
+      --error: #DC2626;
+      --radius: 10px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0F172A;            /* Slate-900 */
+      --surface: #111827;       /* Slate-800 */
+      --surface-alpha-80: rgba(17, 24, 39, 0.8);
+      --text: #E5E7EB;          /* Slate-200 */
+      --text-muted: #CBD5E1;    /* Slate-300 */
+      --border: #1F2937;        /* Slate-700 */
+      /* Slightly brighter accents for dark */
+      --color-primary: #60A5FA; /* Blue-400 */
+      --color-secondary: #34D399; /* Green-400 */
+      --color-accent: #FDBA74;  /* Amber-300 */
+    }
+
+    /* Base tokens and light overrides after Tailwind to win cascade */
+    html, body { height: 100%; }
+    body { background: var(--bg) !important; color: var(--text) !important; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    a { color: var(--color-primary); }
+
+    /* Components */
+    .surface { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+    .btn, .btn-primary { background: var(--color-primary); color: #fff; border: 1px solid transparent; border-radius: 8px; padding: 0.6rem 1rem; cursor: pointer; box-shadow: var(--shadow-sm); }
+    .btn:hover, .btn-primary:hover { filter: brightness(0.95); }
+    .btn-secondary { background: var(--color-secondary); color: #fff; border: 1px solid transparent; border-radius: 8px; padding: 0.6rem 1rem; cursor: pointer; box-shadow: var(--shadow-sm); }
+    .btn-outline { background: transparent; color: var(--color-primary); border: 1px solid var(--color-primary); border-radius: 8px; padding: 0.55rem 1rem; cursor: pointer; box-shadow: var(--shadow-sm); }
+    .btn-outline:hover { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+
+    input, select, textarea { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 25%, transparent); }
+
+    /* Tailwind-to-theme mappings */
+    .bg-white { background-color: var(--surface) !important; }
+    .bg-white\/80 { background-color: var(--surface-alpha-80) !important; }
+    .bg-gray-50 { background-color: var(--bg) !important; }
+    .bg-gray-100 { background-color: var(--surface) !important; }
+    .text-gray-800 { color: var(--text) !important; }
+    .text-blue-600 { color: var(--color-primary) !important; }
+    .border, .border-b { border-color: var(--border) !important; }
+
+    /* Floating theme toggle */
+    #theme-toggle { position: fixed; right: 16px; bottom: var(--toggle-bottom, 16px); width: 44px; height: 44px; border-radius: 9999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); box-shadow: var(--shadow-md); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 120ms ease; z-index: 9999; }
+    #theme-toggle:hover { transform: translateY(-1px); }
+  </style>
   <script defer src="js/vendor/dexie.min.js"></script>
   <script defer src="https://unpkg.com/html5-qrcode"></script>
   <script type="module" src="js/app.js"></script>
@@ -32,7 +140,12 @@
     <section class="bg-white shadow rounded-xl p-4 space-y-4" data-collapsible data-default-collapsed="false">
       <div class="flex items-center justify-between mb-1">
         <h2 class="font-semibold">Kontrol</h2>
-        <button type="button" class="btn-outline collapsible-toggle">Buka</button>
+         <button type="button" class="btn-outline collapsible-toggle" aria-label="Buka/Tutup">
+           <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+             <path d="M19 9l-7 7-7-7" />
+           </svg>
+           <span class="btn-label hidden sm:inline">Buka</span>
+         </button>
       </div>
       <div class="collapsible-body space-y-4">
       <div class="grid md:grid-cols-3 gap-4">
@@ -80,21 +193,44 @@
           <datalist id="templateList"></datalist>
         </div>
         <div class="flex items-end gap-2">
-          <button id="btnApplyTemplate" class="btn-outline">Terapkan</button>
-          <button id="btnSaveTemplate" class="btn-outline">Simpan Template</button>
+          <button id="btnApplyTemplate" class="btn-outline" aria-label="Terapkan Template">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 13l4 4L19 7" />
+            </svg>
+            <span class="hidden sm:inline">Terapkan</span>
+          </button>
+          <button id="btnSaveTemplate" class="btn-outline" aria-label="Simpan Template">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 20h14a1 1 0 001-1V9l-5-5H6a1 1 0 00-1 1v15z" />
+              <path d="M9 13h6" />
+            </svg>
+            <span class="hidden sm:inline">Simpan Template</span>
+          </button>
         </div>
       </div>
       </div>
     </section>
 
     <!-- AREA SCAN -->
-    <section class="bg-white shadow rounded-xl p-4 overflow-hidden" data-collapsible data-default-collapsed="true">
+    <section class="bg-white shadow rounded-xl p-4 overflow-hidden" >
       <div class="flex items-center justify-between mb-2">
         <h2 class="font-semibold">Scan QR</h2>
         <div class="flex items-center gap-2">
-          <button id="btnStartQR" class="btn">Scan QR</button>
-          <button id="btnStopQR" class="btn-secondary">Stop Scan</button>
-          <button type="button" class="btn-outline collapsible-toggle">Buka</button>
+          <button id="btnStartQR" class="btn" aria-label="Scan QR">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="7" width="18" height="12" rx="2"/>
+              <circle cx="12" cy="13" r="3"/>
+              <path d="M9 7l1.5-2h3L15 7"/>
+            </svg>
+            <span class="hidden sm:inline">Scan QR</span>
+          </button>
+          <button id="btnStopQR" class="btn-secondary" aria-label="Stop Scan">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 6l12 12M6 18L18 6"/>
+            </svg>
+            <span class="hidden sm:inline">Stop Scan</span>
+          </button>
+         
         </div>
       </div>
       <div id="reader" class="rounded border collapsible-body hidden"></div>
@@ -104,7 +240,12 @@
     <section class="bg-white shadow rounded-xl p-4 overflow-hidden" data-collapsible data-default-collapsed="true">
       <div class="flex items-center justify-between mb-2">
         <h2 class="font-semibold">Input Manual</h2>
-        <button type="button" class="btn-outline collapsible-toggle">Buka</button>
+        <button type="button" class="btn-outline collapsible-toggle" aria-label="Buka/Tutup">
+          <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 9l-7 7-7-7" />
+          </svg>
+          <span class="btn-label hidden sm:inline">Buka</span>
+        </button>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 collapsible-body hidden">
         <div class="sm:col-span-2 md:col-span-2 min-w-0">
@@ -131,8 +272,20 @@
           <input id="foto" type="file" accept="image/*" class="border rounded px-3 py-2 w-full md:w-auto" />
         </div>
         <div class="sm:col-span-2 md:col-span-4 flex flex-col sm:flex-row gap-2 mt-1">
-          <button id="btnAbsen" class="btn w-full sm:w-auto">Catat</button>
-          <button id="btnExportCSV" class="btn-outline w-full sm:w-auto">Export CSV</button>
+          <button id="btnAbsen" class="btn w-full sm:w-auto" aria-label="Catat Absen">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 12l2 2 4-4" />
+              <rect x="5" y="4" width="14" height="16" rx="2" />
+            </svg>
+            <span class="hidden sm:inline">Catat</span>
+          </button>
+          <button id="btnExportCSV" class="btn-outline w-full sm:w-auto" aria-label="Export CSV">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 4v10m0 0l-4-4m4 4l4-4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Export CSV</span>
+          </button>
         </div>
       </div>
     </section>
@@ -142,7 +295,14 @@
       <div class="flex items-center justify-between mb-2">
         <h2 class="font-semibold">Rekap Lokal (Hari Ini)</h2>
         <div class="flex items-center gap-3">
-          <button id="btnSync" class="btn-outline">Sinkron</button>
+            <button id="btnSync" class="btn-outline" aria-label="Sinkron">
+              <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 7v6h6" />
+                <path d="M20 17v-6h-6" />
+                <path d="M20 17a8 8 0 01-14 2M4 7a8 8 0 0114-2" />
+              </svg>
+              <span class="hidden sm:inline">Sinkron</span>
+            </button>
           <div class="text-sm text-gray-500" id="rekapInfo"></div>
         </div>
       </div>
@@ -197,8 +357,18 @@
             </select>
           </div>
           <div class="flex items-center gap-2">
-            <button id="btnPrevPage" class="btn-outline">Prev</button>
-            <button id="btnNextPage" class="btn-outline">Next</button>
+            <button id="btnPrevPage" class="btn-outline" aria-label="Halaman Sebelumnya">
+              <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 19l-7-7 7-7" />
+              </svg>
+              <span class="hidden sm:inline">Prev</span>
+            </button>
+            <button id="btnNextPage" class="btn-outline" aria-label="Halaman Berikutnya">
+              <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 5l7 7-7 7" />
+              </svg>
+              <span class="hidden sm:inline">Next</span>
+            </button>
           </div>
         </div>
         <div id="pageInfo" class="text-xs text-gray-500"></div>
@@ -213,10 +383,72 @@
     <a href="about.html" class="text-blue-600 hover:underline">Tentang</a>
   </footer>
 
+  <!-- Mobile bottom nav (small screens) -->
+  <nav class="mobile-nav sm:hidden" role="navigation" aria-label="Navigasi bawah">
+    <div class="nav-grid">
+      <a href="index.html" data-path="index.html" aria-label="Absen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="4" width="14" height="16" rx="2" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+        <span class="text-xs">Absen</span>
+      </a>
+      <a href="dashboard.html" data-path="dashboard.html" aria-label="Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h6V4H3zM15 20h6v-8h-6zM3 20h6v-6H3zM15 12h6V4h-6z" />
+        </svg>
+        <span class="text-xs">Dashboard</span>
+      </a>
+      <a href="panduan.html" data-path="panduan.html" aria-label="Panduan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19a2 2 0 002 2h12" />
+          <path d="M20 21V7a2 2 0 00-2-2h-8l-4 4v12" />
+        </svg>
+        <span class="text-xs">Panduan</span>
+      </a>
+      <a href="settings.html" data-path="settings.html" aria-label="Pengaturan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06A2 2 0 015.94 3.2l.06.06a1.65 1.65 0 001.82.33H8a1.65 1.65 0 001-1.51V2a2 2 0 014 0v.09a1.65 1.65 0 001 1.51h.18a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V8a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+        <span class="text-xs">Pengaturan</span>
+      </a>
+    </div>
+  </nav>
   <script>
-    // Daftarkan service worker
+    // Highlight active bottom nav item
+    (function(){
+      try{
+        var href = location.pathname.split('/').pop() || 'index.html';
+        document.querySelectorAll('.mobile-nav a').forEach(function(a){
+          if(a.getAttribute('data-path') === href){ a.classList.add('active'); }
+        });
+      }catch(e){}
+    })();
+  </script>
+
+  <script>
+    // Daftarkan service worker (bersihkan SW lama yang pakai addAll)
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js', { scope: './' });
+      (async ()=>{
+        try{
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const reg of regs){
+            const u = (reg.active||reg.waiting||reg.installing)?.scriptURL || '';
+            if (u && /\/sw\.js($|\?)/.test(u) && !u.includes('?v=19')){
+              await reg.unregister();
+            }
+          }
+          if (window.caches){
+            const keys = await caches.keys();
+            await Promise.all(keys.filter(k=>/^absensi-cache-v1[0-8]$/.test(k)).map(k=>caches.delete(k)));
+          }
+        }catch(e){}
+        try{
+          const reg = await navigator.serviceWorker.register('sw.js?v=19', { scope: './' });
+          try{ reg.update(); }catch(_){}
+        }catch(e){}
+      })();
     }
     // Collapsible cards
     document.addEventListener('DOMContentLoaded', ()=>{
@@ -224,7 +456,11 @@
         const btn = sec.querySelector('.collapsible-toggle');
         const body = sec.querySelector('.collapsible-body');
         if(!btn || !body) return;
-        const setLabel = ()=>{ btn.textContent = body.classList.contains('hidden') ? 'Buka' : 'Tutup'; };
+        const setLabel = ()=>{
+          const lbl = btn.querySelector('.btn-label');
+          const text = body.classList.contains('hidden') ? 'Buka' : 'Tutup';
+          if(lbl) lbl.textContent = text; else btn.textContent = text;
+        };
         if(sec.getAttribute('data-default-collapsed')==='true') body.classList.add('hidden');
         setLabel();
         btn.addEventListener('click', ()=>{ body.classList.toggle('hidden'); setLabel(); });

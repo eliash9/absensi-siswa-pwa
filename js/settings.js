@@ -319,7 +319,7 @@ async function printQrCards(rows){
           <img src="${c.img}" alt="QR ${c.siswaId}">
           <div class="title">${escapeHtml(c.nama)}</div>
           <div class="sub">${escapeHtml(c.siswaId)}${c.kelas? ' • '+escapeHtml(c.kelas): ''}</div>
-          <div class="footer">Format: SISWAID|NAMALENGKAP</div>
+          
         </div>`).join('')}
     </div>
   </body></html>`;
