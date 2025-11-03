@@ -1,0 +1,50 @@
+/* Utilities without Tailwind build */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:.25rem;
+  padding:.5rem .75rem;
+  border-radius:.375rem;
+  background:#3b82f6; /* blue-500 */
+  color:#fff;
+  border:1px solid transparent;
+  transition:background-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+.btn:hover{ background:#2563eb; /* blue-600 */ }
+
+.btn-secondary{
+  display:inline-flex;
+  align-items:center;
+  gap:.25rem;
+  padding:.5rem .75rem;
+  border-radius:.375rem;
+  background:#4b5563; /* gray-600 */
+  color:#fff;
+  border:1px solid transparent;
+}
+.btn-secondary:hover{ background:#374151; /* gray-700 */ }
+
+.btn-outline{
+  display:inline-flex;
+  align-items:center;
+  gap:.25rem;
+  padding:.5rem .75rem;
+  border-radius:.375rem;
+  background:#ffffff;
+  color:#2563eb; /* blue-600 */
+  border:1px solid #3b82f6; /* blue-500 */
+}
+.btn-outline:hover{ background:#eff6ff; /* blue-50 */ }
+
+.th{
+  text-align:left;
+  padding:.5rem .75rem;
+  font-weight:600;
+}
+
+/* Minor helpers */
+table td{ vertical-align:top; }
+input.border, select.border, textarea.border{ border:1px solid #e5e7eb; }
+input.rounded, select.rounded, textarea.rounded{ border-radius:.375rem; }
+input.px-3, select.px-3, textarea.px-3{ padding-left:.75rem; padding-right:.75rem; }
+input.py-2, select.py-2, textarea.py-2{ padding-top:.5rem; padding-bottom:.5rem; }

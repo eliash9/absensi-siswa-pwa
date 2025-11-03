@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panduan Google Apps Script - Absensi PWA</title>
+  <meta name="theme-color" content="#0ea5e9" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <h1 class="font-semibold text-lg">Panduan Sinkronisasi ke Google Sheet</h1>
+      <div class="flex items-center gap-3">
+        <a href="/index.html" class="text-blue-600 hover:underline text-sm">Kembali</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <section class="bg-white shadow rounded-xl p-4 space-y-3">
+      <h2 class="font-semibold">Ringkasan</h2>
+      <ul class="list-disc pl-5 text-sm text-gray-700">
+        <li>Aplikasi menyimpan data lokal (IndexedDB) dan akan mengirim batch ke Google Sheet via Google Apps Script Web App.</li>
+        <li>Anda perlu membuat Google Sheet dan Apps Script, lalu menempel URL Web App ke menu Pengaturan.</li>
+      </ul>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4 space-y-3">
+      <h2 class="font-semibold">Panduan Penggunaan</h2>
+      <h3 class="font-medium">Persiapan Awal</h3>
+      <ul class="list-disc pl-5 text-sm text-gray-700">
+        <li>Buka menu <a class="text-blue-600 underline" href="/settings.html">Pengaturan</a> lalu isi <em>GAS Web App URL</em>, klik <em>Simpan</em> dan <em>Tes</em>.</li>
+        <li>Atur master data: tambah manual atau <em>Import CSV</em> (Siswa/Guru/Mapel). Bisa juga <em>Import Gabungan</em> (JSON/ZIP).</li>
+        <li>Opsional: <em>Sinkron Master</em> untuk menulis master lokal ke Sheet, atau <em>Ambil Master dari Sheet</em> untuk menarik master dari Sheet.</li>
+        <li>Cetak QR Siswa: di Master Siswa → tombol <em>Cetak QR (Filter)</em> atau <em>Cetak QR</em> per baris.</li>
+      </ul>
+
+      <h3 class="font-medium">Mencatat Absensi</h3>
+      <ul class="list-disc pl-5 text-sm text-gray-700">
+        <li>Pilih <em>Mode</em> (Mapel/Kegiatan), isi <em>Mapel/Kegiatan</em>, <em>Jam Ke</em>, <em>Tanggal</em>, dan <em>Guru/PJ</em>.</li>
+        <li>Scan QR: klik <em>Scan QR</em>, izinkan kamera, arahkan ke QR (format: <code>SISWAID|NAMALENGKAP</code>). Bunyi “beep” menandakan berhasil, duplikat dalam waktu singkat akan diabaikan.</li>
+        <li>Input Manual: pilih <em>ID Siswa</em> dari daftar (datalist) → <em>Nama</em> otomatis terisi → pilih <em>Status</em> → klik <em>Catat</em>.</li>
+        <li>Otomatis menyimpan waktu (HH:MM:SS) dan menandai entri belum tersinkron (badge “Belum sinkron”).</li>
+      </ul>
+
+      <h3 class="font-medium">Rekap & Edit</h3>
+      <ul class="list-disc pl-5 text-sm text-gray-700">
+        <li>Filter rekap: cari teks bebas (nama/ID/mapel/kegiatan/PJ), filter <em>Status</em>, <em>Mode</em>, dan <em>Synced</em>.</li>
+        <li>Edit inline: klik <em>Edit</em> pada baris → ubah nilai → <em>Simpan</em>. Perubahan menandai entri sebagai belum sinkron.</li>
+        <li>Hapus: klik <em>Hapus</em> pada baris terkait.</li>
+        <li>Export CSV: klik <em>Export CSV</em> untuk rekap harian sesuai tanggal terpilih.</li>
+      </ul>
+
+      <h3 class="font-medium">Sinkronisasi</h3>
+      <ul class="list-disc pl-5 text-sm text-gray-700">
+        <li>Tekan <em>Sinkron</em> di halaman utama untuk mengirim entri belum sinkron, lalu aplikasi akan menarik entri dari Sheet untuk tanggal aktif.</li>
+        <li>Status koneksi terlihat pada badge <em>Online/Offline</em>. Saat Offline tombol Sinkron dinonaktifkan dan akan otomatis berjalan saat kembali Online.</li>
+        <li>Multi-perangkat: gunakan <em>GAS Web App URL</em> yang sama. Entri dari perangkat lain akan masuk saat Anda melakukan sinkron/pull — duplikasi dicegah berdasarkan kombinasi (mode, jam ke, mapel/kegiatan, siswaId).</li>
+      </ul>
+
+      <h3 class="font-medium">PWA & Offline</h3>
+      <ul class="list-disc pl-5 text-sm text-gray-700">
+        <li>Aplikasi dapat dipasang ke layar utama (Add to Home Screen). Kamera bekerja pada <em>HTTPS</em> atau <em>localhost</em>.</li>
+        <li>Gunakan aplikasi sekali dalam keadaan online agar semua aset tercache; setelah itu fitur tetap jalan saat Offline (IndexedDB + Service Worker).</li>
+      </ul>
+
+      <h3 class="font-medium">Backup</h3>
+      <ul class="list-disc pl-5 text-sm text-gray-700">
+        <li>Di Pengaturan: <em>Export Gabungan (ZIP/JSON)</em> untuk master, dan <em>Export CSV</em> untuk rekap harian dari halaman utama.</li>
+      </ul>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4 space-y-3">
+      <h2 class="font-semibold">Laporan (Opsional)</h2>
+      <p class="text-sm text-gray-700">Agar tombol “Export ke Sheet” di Dashboard berfungsi, tambahkan handler berikut ke Code.gs Anda (di bawah fungsi yang sudah ada):</p>
+      <pre class="overflow-auto text-xs bg-gray-50 border rounded p-3"><code>function reportUpsertOnSheet_(rows){
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sh = ss.getSheetByName('ReportRaw') || ss.insertSheet('ReportRaw');
+  if (sh.getLastRow() === 0){
+    sh.appendRow(['timestampLocal','tanggal','siswaId','nama','kelas','guru','mode','jamKe','mapel','kegiatan','status']);
+  }
+  var values = rows.map(function(r){ return [r.timestampLocal, r.tanggal, r.siswaId, r.nama, r.kelas, r.guru, r.mode, r.jamKe, r.mapel, r.kegiatan, r.status]; });
+  sh.getRange(sh.getLastRow()+1,1,values.length,values[0].length).setValues(values);
+}
+
+// Tambahkan di dalam doPost(e):
+// if (body.action === 'reportUpsert') { reportUpsertOnSheet_(body.rows||[]); return _json({ok:true}); }
+</code></pre>
+      <p class="text-xs text-gray-500">Gunakan Data Source “ReportRaw” di Looker Studio untuk membuat pivot chart (kelas/guru, status, jamKe, mapel/kegiatan).</p>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4 space-y-3">
+      <h2 class="font-semibold">Langkah 1 — Buat Google Sheet</h2>
+      <ol class="list-decimal pl-5 text-sm text-gray-700 space-y-1">
+        <li>Buka <a class="text-blue-600 underline" href="https://sheets.google.com" target="_blank" rel="noreferrer">Google Sheets</a> dan buat spreadsheet baru.</li>
+        <li>Ganti nama tab (sheet) menjadi <code>Absensi</code>.</li>
+        <li>Salin <strong>Sheet ID</strong> dari URL (bagian di antara <code>/d/</code> dan <code>/edit</code>).</li>
+      </ol>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4 space-y-3">
+      <h2 class="font-semibold">Langkah 2 — Buat Apps Script</h2>
+      <ol class="list-decimal pl-5 text-sm text-gray-700 space-y-1">
+        <li>Buka <a class="text-blue-600 underline" href="https://script.google.com" target="_blank" rel="noreferrer">script.google.com</a> → New project.</li>
+        <li>Tambah file <code>Code.gs</code> dan tempelkan kode di bawah ini.</li>
+        <li>Ganti placeholder <code>&lt;&lt;SHEET_ID&gt;&gt;</code> sesuai ID spreadsheet Anda.</li>
+      </ol>
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-medium">Code.gs</h3>
+          <button id="btnCopy" class="btn-outline text-xs">Copy</button>
+        </div>
+<pre id="code" class="overflow-auto text-xs bg-gray-50 border rounded p-3"><code>// ====== Code.gs ======
+var SHEET_ID = '&lt;&lt;SHEET_ID&gt;&gt;'; // Ganti!
+
+function toIsoDate(d){
+  if (Object.prototype.toString.call(d) === '[object Date]') {
+    var y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), dd=('0'+d.getDate()).slice(-2);
+    return y+'-'+m+'-'+dd;
+  }
+  if (typeof d === 'string' &amp;&amp; /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  try { var dt = new Date(d); if (!isNaN(dt)) return toIsoDate(dt); } catch(e){}
+  return '';
+}
+
+function headerIndex(row){
+  var map = {};
+  for (var i=0;i&lt;row.length;i++){ map[String(row[i]).trim()] = i; }
+  return map;
+}
+
+var SHEET_ABSENSI= 'Absensi';
+var SHEET_SISWA = 'Master_Siswa';
+var SHEET_GURU = 'Master_Guru';
+var SHEET_MAPEL = 'Master_Mapel';
+
+function doGet(e){
+try{
+  var action = (e &amp;&amp; e.parameter &amp;&amp; e.parameter.action) ? String(e.parameter.action) : '';
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+
+  if (action === 'masters'){
+    var out = { ok:true, siswa:[], guru:[], mapel:[] };
+
+    var shS = ss.getSheetByName(SHEET_SISWA);
+    if (shS){
+      var rS = shS.getDataRange().getValues();
+      if (rS.length &gt; 1){
+        var idxS = headerIndex(rS[0]);
+        var hasUpdS = (typeof idxS.updatedAt !== 'undefined');
+        for (var i=1;i&lt;rS.length;i++){
+          out.siswa.push({
+            siswaId: rS[i][idxS.siswaId]||'',
+            nama: rS[i][idxS.nama]||'',
+            kelas: rS[i][idxS.kelas]||'',
+            updatedAt: hasUpdS ? (rS[i][idxS.updatedAt]||'') : ''
+          });
+        }
+      }
+    }
+
+    var shG = ss.getSheetByName(SHEET_GURU);
+    if (shG){
+      var rG = shG.getDataRange().getValues();
+      if (rG.length &gt; 1){
+        var idxG = headerIndex(rG[0]);
+        var hasUpdG = (typeof idxG.updatedAt !== 'undefined');
+        for (var j=1;j&lt;rG.length;j++){
+          out.guru.push({
+            guruId: rG[j][idxG.guruId]||'',
+            nama: rG[j][idxG.nama]||'',
+            updatedAt: hasUpdG ? (rG[j][idxG.updatedAt]||'') : ''
+          });
+        }
+      }
+    }
+
+    var shM = ss.getSheetByName(SHEET_MAPEL);
+    if (shM){
+      var rM = shM.getDataRange().getValues();
+      if (rM.length &gt; 1){
+        var idxM = headerIndex(rM[0]);
+        var hasUpdM = (typeof idxM.updatedAt !== 'undefined');
+        for (var k=1;k&lt;rM.length;k++){
+          out.mapel.push({
+            mapelId: rM[k][idxM.mapelId]||'',
+            nama: rM[k][idxM.nama]||'',
+            updatedAt: hasUpdM ? (rM[k][idxM.updatedAt]||'') : ''
+          });
+        }
+      }
+    }
+
+    return _json(out);
+  }
+
+  if (action === 'absensi'){
+    var t = (e.parameter &amp;&amp; e.parameter.tanggal) ? String(e.parameter.tanggal) : '';
+    var sh = ss.getSheetByName(SHEET_ABSENSI);
+    if (!sh) return _json({ ok:true, rows:[] });
+    var data = sh.getDataRange().getValues();
+    if (data.length &lt;= 1) return _json({ ok:true, rows:[] });
+
+    var idx = headerIndex(data[0]);
+    var rows = [];
+    for (var r=1;r&lt;data.length;r++){
+      var row = data[r];
+      var tanggal = toIsoDate(row[idx.tanggal]);
+      if (!t || tanggal === t){
+        rows.push({
+          timestampServer: row[idx.timestampServer],
+          tanggal: tanggal,
+          mode: row[idx.mode],
+          jamKe: row[idx.jamKe],
+          mapel: row[idx.mapel],
+          kegiatan: row[idx.kegiatan],
+          siswaId: row[idx.siswaId],
+          nama: row[idx.nama],
+          status: row[idx.status],
+          waktu: row[idx.waktu],
+          penanggungJawab: row[idx.penanggungJawab],
+          syncedLocal: row[idx.syncedLocal],
+          localId: row[idx.localId]
+        });
+      }
+    }
+    return _json({ ok:true, rows: rows });
+  }
+
+  return _json({ ok:true, ping:true });
+}catch(err){
+  return _json({ ok:false, error: String(err) });
+}
+}
+
+function doPost(e){
+try{
+  var body = JSON.parse(e.postData.contents || '{}');
+
+  // Upsert master (server-side merge)
+  if (body.action === 'mastersUpsert'){
+    return upsertMasters(body);
+  }
+
+  // Append batch absensi
+  var rows = Array.isArray(body.rows) ? body.rows : [];
+  if (!rows.length) return _json({ ok:true, savedIds:[] });
+
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sh = ss.getSheetByName(SHEET_ABSENSI) || ss.insertSheet(SHEET_ABSENSI);
+
+  if (sh.getLastRow() === 0){
+    sh.appendRow(['timestampServer','tanggal','mode','jamKe','mapel','kegiatan','siswaId','nama','status','waktu','penanggungJawab','syncedLocal','localId']);
+  }
+
+  var now = new Date();
+  var values = [];
+  for (var i=0;i&lt;rows.length;i++){
+    var r = rows[i];
+    values.push([ now,
+      r.tanggal||'', r.mode||'', r.jamKe||'', r.mapel||'', r.kegiatan||'',
+      r.siswaId||'', r.nama||'', r.status||'', r.waktu||'', r.penanggungJawab||'',
+      r.synced===true ? '1':'0', r.id||''
+    ]);
+  }
+  sh.getRange(sh.getLastRow()+1, 1, values.length, values[0].length).setValues(values);
+  var savedIds = [];
+  for (var j=0;j&lt;rows.length;j++){ if (rows[j].id) savedIds.push(rows[j].id); }
+  return _json({ ok:true, savedIds: savedIds });
+}catch(err){
+  return _json({ ok:false, error: String(err) });
+}
+}
+
+function upsertMasters(body){
+var ss = SpreadsheetApp.openById(SHEET_ID);
+var siswa = Array.isArray(body.siswa) ? body.siswa : [];
+var guru = Array.isArray(body.guru) ? body.guru : [];
+var mapel = Array.isArray(body.mapel) ? body.mapel : [];
+var now = new Date();
+
+// SISWA
+var shS = ss.getSheetByName(SHEET_SISWA) || ss.insertSheet(SHEET_SISWA);
+if (shS.getLastRow() === 0){ shS.appendRow(['siswaId','nama','kelas','updatedAt']); }
+var rS = shS.getDataRange().getValues();
+var idxS= headerIndex(rS[0]);
+var mapS= {};
+for (var i=1;i&lt;rS.length;i++){ mapS[String(rS[i][idxS.siswaId])] = i; }
+for (var a=0;a&lt;siswa.length;a++){
+  var rowS = siswa[a];
+  var idS = String(rowS.siswaId||''); if (!idS) continue;
+  var tsS = rowS.updatedAt ? new Date(rowS.updatedAt) : now;
+  var posS = mapS[idS];
+  if (posS == null){ shS.appendRow([idS, rowS.nama||'', rowS.kelas||'', tsS]); }
+  else{
+    var curTsS = rS[posS][idxS.updatedAt] ? new Date(rS[posS][idxS.updatedAt]) : new Date(0);
+    if (tsS &gt; curTsS){ shS.getRange(posS+1,1,1,4).setValues([[idS, rowS.nama||'', rowS.kelas||'', tsS]]); }
+  }
+}
+
+// GURU
+var shG = ss.getSheetByName(SHEET_GURU) || ss.insertSheet(SHEET_GURU);
+if (shG.getLastRow() === 0){ shG.appendRow(['guruId','nama','updatedAt']); }
+var rG = shG.getDataRange().getValues();
+var idxG= headerIndex(rG[0]);
+var mapG= {}; for (var g=1; g&lt;rG.length; g++){ mapG[String(rG[g][idxG.guruId])] = g; }
+for (var b=0;b&lt;guru.length;b++){
+  var rowG = guru[b];
+  var idG = String(rowG.guruId||''); if (!idG) continue;
+  var tsG = rowG.updatedAt ? new Date(rowG.updatedAt) : now;
+  var posG = mapG[idG];
+  if (posG == null){ shG.appendRow([idG, rowG.nama||'', tsG]); }
+  else{
+    var curTsG = rG[posG][idxG.updatedAt] ? new Date(rG[posG][idxG.updatedAt]) : new Date(0);
+    if (tsG &gt; curTsG){ shG.getRange(posG+1,1,1,3).setValues([[idG, rowG.nama||'', tsG]]); }
+  }
+}
+
+// MAPEL
+var shM = ss.getSheetByName(SHEET_MAPEL) || ss.insertSheet(SHEET_MAPEL);
+if (shM.getLastRow() === 0){ shM.appendRow(['mapelId','nama','updatedAt']); }
+var rM = shM.getDataRange().getValues();
+var idxM= headerIndex(rM[0]);
+var mapM= {}; for (var m=1;m&lt;rM.length;m++){ mapM[String(rM[m][idxM.mapelId])] = m; }
+for (var c=0;c&lt;mapel.length;c++){
+  var rowM = mapel[c];
+  var idM = String(rowM.mapelId||''); if (!idM) continue;
+  var tsM = rowM.updatedAt ? new Date(rowM.updatedAt) : now;
+  var posM = mapM[idM];
+  if (posM == null){ shM.appendRow([idM, rowM.nama||'', tsM]); }
+  else{
+    var curTsM = rM[posM][idxM.updatedAt] ? new Date(rM[posM][idxM.updatedAt]) : new Date(0);
+    if (tsM &gt; curTsM){ shM.getRange(posM+1,1,1,3).setValues([[idM, rowM.nama||'', tsM]]); }
+  }
+}
+
+return _json({ ok:true });
+}
+
+function _json(obj){
+return ContentService.createTextOutput(JSON.stringify(obj))
+.setMimeType(ContentService.MimeType.JSON);
+}
+</code></pre>
+      </div>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4 space-y-3">
+      <h2 class="font-semibold">Langkah 3 — Deploy Web App</h2>
+      <ol class="list-decimal pl-5 text-sm text-gray-700 space-y-1">
+        <li>Klik <em>Deploy</em> → <em>New deployment</em> → Pilih <em>Web app</em>.</li>
+        <li>Who has access: pilih <em>Anyone</em> atau <em>Anyone with the link</em>.</li>
+        <li>Klik Deploy → salin <strong>Web App URL</strong>.</li>
+      </ol>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4 space-y-3">
+      <h2 class="font-semibold">Langkah 4 — Hubungkan ke Aplikasi</h2>
+      <ol class="list-decimal pl-5 text-sm text-gray-700 space-y-1">
+        <li>Buka menu <a class="text-blue-600 underline" href="/settings.html">Pengaturan</a>.</li>
+        <li>Tempel <strong>GAS Web App URL</strong> yang Anda salin → Simpan.</li>
+        <li>Opsional: klik tombol <em>Tes</em> untuk memeriksa akses.</li>
+        <li>Di halaman utama, klik <em>Sinkron</em> atau tunggu otomatis saat status Online.</li>
+      </ol>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4 space-y-3">
+      <h2 class="font-semibold">Troubleshooting</h2>
+      <ul class="list-disc pl-5 text-sm text-gray-700">
+        <li>Pastikan Web App di-deploy dengan akses publik (Anyone/Anyone with the link).</li>
+        <li>Pastikan Anda sudah mengisi URL di menu Pengaturan dan perangkat dalam keadaan Online saat mencoba sinkron pertama kali.</li>
+        <li>Periksa tab <em>Executions</em> di Apps Script jika ada error server.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+    const btn = document.getElementById('btnCopy');
+    const pre = document.getElementById('code');
+    btn?.addEventListener('click', async ()=>{
+      const text = pre?.innerText || '';
+      try{
+        await navigator.clipboard.writeText(text);
+        btn.textContent = 'Tersalin!';
+        setTimeout(()=> btn.textContent = 'Copy', 1200);
+      }catch(err){
+        // fallback seleksi
+        const r = document.createRange(); r.selectNode(pre); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        document.execCommand('copy'); sel.removeAllRanges(); btn.textContent='Tersalin!'; setTimeout(()=> btn.textContent='Copy', 1200);
+      }
+    });
+  </script>
+</body>
+</html>

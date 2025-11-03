@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Absensi Siswa PWA (Offline)</title>
+  <meta name="theme-color" content="#0ea5e9" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/js/vendor/dexie.min.js"></script>
+  <script defer src="https://unpkg.com/html5-qrcode"></script>
+  <script type="module" src="/js/app.js"></script>
+  
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <h1 class="font-semibold text-lg">Absensi Siswa (PWA)</h1>
+      <div class="flex items-center gap-3">
+        <a href="/dashboard.html" class="text-blue-600 hover:underline text-sm">Dashboard</a>
+        <a href="/panduan.html" class="text-blue-600 hover:underline text-sm">Panduan</a>
+        <a href="/settings.html" class="text-blue-600 hover:underline text-sm">Pengaturan</a>
+        <span id="net-badge" class="px-2 py-1 text-xs rounded bg-gray-200">Offline</span>
+        <span id="unsynced-badge" class="px-2 py-1 text-xs rounded bg-yellow-100">Belum sinkron: 0</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <!-- MODE & FORM KONTROL -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <div class="grid md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Mode</label>
+          <select id="mode" class="w-full border rounded px-3 py-2">
+            <option value="mapel">Per Jam Mapel</option>
+            <option value="kegiatan">Per Kegiatan</option>
+          </select>
+        </div>
+        <div id="mapel-wrap">
+          <label class="block text-sm mb-1">Mata Pelajaran</label>
+          <input id="mapel" list="mapelList" class="w-full border rounded px-3 py-2" placeholder="Matematika, IPA, ..." />
+          <datalist id="mapelList"></datalist>
+        </div>
+        <div id="kegiatan-wrap" class="hidden">
+          <label class="block text-sm mb-1">Nama Kegiatan</label>
+          <input id="kegiatan" class="w-full border rounded px-3 py-2" placeholder="Ujian, Ekstrakurikuler, ..." />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Jam Ke</label>
+          <input id="jamKe" type="number" min="1" class="w-full border rounded px-3 py-2" value="1" />
+        </div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Tanggal</label>
+          <input id="tanggal" type="date" class="w-full border rounded px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Guru / PJ</label>
+          <input id="penanggungJawab" list="guruList" class="w-full border rounded px-3 py-2" placeholder="Nama Guru/PJ" />
+          <datalist id="guruList"></datalist>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Lokasi</label>
+          <input id="lokasi" class="w-full border rounded px-3 py-2" placeholder="Ruang, Lab, Lapangan, ..." />
+        </div>
+        <div class="flex items-end gap-2"></div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">Template</label>
+          <input id="templateInput" list="templateList" class="w-full border rounded px-3 py-2" placeholder="Pilih/Ketik nama template" />
+          <datalist id="templateList"></datalist>
+        </div>
+        <div class="flex items-end gap-2">
+          <button id="btnApplyTemplate" class="btn-outline">Terapkan</button>
+          <button id="btnSaveTemplate" class="btn-outline">Simpan Template</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- AREA SCAN -->
+    <section class="bg-white shadow rounded-xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Scan QR</h2>
+        <div class="flex items-center gap-2">
+          <button id="btnStartQR" class="btn">Scan QR</button>
+          <button id="btnStopQR" class="btn-secondary">Stop Scan</button>
+        </div>
+      </div>
+      <div id="reader" class="rounded border"></div>
+    </section>
+
+    <!-- INPUT MANUAL -->
+    <section class="bg-white shadow rounded-xl p-4">
+      <h2 class="font-semibold mb-3">Input Manual</h2>
+      <div class="grid md:grid-cols-6 gap-3">
+        <div class="col-span-2 md:col-span-2">
+          <input id="siswaId" list="siswaList" class="border rounded px-3 py-2 w-full" placeholder="Cari ID Siswa" />
+          <datalist id="siswaList"></datalist>
+        </div>
+        <input id="namaSiswa" class="border rounded px-3 py-2" placeholder="Nama Siswa" readonly />
+        <select id="status" class="border rounded px-3 py-2">
+          <option>Hadir</option><option>Terlambat</option><option>Izin</option><option>Sakit</option><option>Alpa</option>
+        </select>
+        <input id="alasan" class="border rounded px-3 py-2" placeholder="Alasan/Keterangan (opsional)" />
+        <input id="foto" type="file" accept="image/*" class="border rounded px-3 py-2" />
+        <button id="btnAbsen" class="btn">Catat</button>
+        <button id="btnExportCSV" class="btn-outline">Export CSV</button>
+      </div>
+    </section>
+
+    <!-- DAFTAR ABSENSI HARI INI -->
+    <section class="bg-white shadow rounded-xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Rekap Lokal (Hari Ini)</h2>
+        <div class="flex items-center gap-3">
+          <button id="btnSync" class="btn-outline">Sinkron</button>
+          <div class="text-sm text-gray-500" id="rekapInfo"></div>
+        </div>
+      </div>
+      <!-- FILTER -->
+      <div class="grid md:grid-cols-4 gap-3 mb-3">
+        <input id="filterQ" class="border rounded px-3 py-2" placeholder="Cari nama/ID/mapel/kegiatan/PJ" />
+        <select id="filterStatus" class="border rounded px-3 py-2">
+          <option value="">Status: Semua</option>
+          <option>Hadir</option>
+          <option>Izin</option>
+          <option>Sakit</option>
+          <option>Alpa</option>
+        </select>
+        <select id="filterMode" class="border rounded px-3 py-2">
+          <option value="">Mode: Semua</option>
+          <option value="mapel">Mapel</option>
+          <option value="kegiatan">Kegiatan</option>
+        </select>
+        <select id="filterSynced" class="border rounded px-3 py-2">
+          <option value="">Synced: Semua</option>
+          <option value="1">Sudah</option>
+          <option value="0">Belum</option>
+        </select>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="th">Waktu</th>
+              <th class="th">Siswa</th>
+              <th class="th">Status</th>
+              <th class="th">Mode</th>
+              <th class="th">Mapel/Kegiatan</th>
+              <th class="th">Jam</th>
+              <th class="th">Guru/PJ</th>
+              <th class="th">Synced</th>
+              <th class="th"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="divide-y"></tbody>
+        </table>
+      </div>
+      <div id="pager" class="flex items-center justify-between mt-3 hidden">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 text-sm">
+            <label for="pageSizeSelect">Baris/hal:</label>
+            <select id="pageSizeSelect" class="border rounded px-2 py-1">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnPrevPage" class="btn-outline">Prev</button>
+            <button id="btnNextPage" class="btn-outline">Next</button>
+          </div>
+        </div>
+        <div id="pageInfo" class="text-xs text-gray-500"></div>
+      </div>
+    </section>
+
+    
+  </main>
+
+  <footer class="max-w-5xl mx-auto px-4 py-6 text-xs text-gray-500">
+    Offline-first • Data lokal di perangkat • Sinkron saat online • 
+    <a href="/about.html" class="text-blue-600 hover:underline">Tentang</a>
+  </footer>
+
+  <script>
+    // Daftarkan service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+    // Auto-refresh datalist master saat kembali dari tab lain
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.visibilityState==='visible'){
+        try{
+          // simple repopulate by dispatching change to trigger existing loaders in app.js
+          // or force reload by re-calling module function via custom event
+          const ev = new Event('repopulate');
+          document.dispatchEvent(ev);
+        }catch(e){}
+      }
+    });
+  </script>
+</body>
+</html>

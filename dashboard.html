@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Absensi PWA</title>
+  <meta name="theme-color" content="#0ea5e9" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/js/vendor/dexie.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script type="module" src="/js/dashboard.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <h1 class="font-semibold text-lg">Dashboard</h1>
+      <div class="flex items-center gap-3">
+        <a href="/index.html" class="text-blue-600 hover:underline text-sm">Absen</a>
+        <a href="/settings.html" class="text-blue-600 hover:underline text-sm">Pengaturan</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <section class="bg-white shadow rounded-xl p-4">
+      <div class="grid md:grid-cols-6 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Tanggal</label>
+          <input id="tanggal" type="date" class="w-full border rounded px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Rentang</label>
+          <select id="rangeSelect" class="w-full border rounded px-3 py-2">
+            <option value="today">Hari ini</option>
+            <option value="week">Minggu ini</option>
+            <option value="month">Bulan ini</option>
+            <option value="custom">Kustom</option>
+          </select>
+        </div>
+        <div id="rangeWrap" class="grid grid-cols-2 gap-2">
+          <input id="startDate" type="date" class="w-full border rounded px-3 py-2" />
+          <input id="endDate" type="date" class="w-full border rounded px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Kelompok</label>
+          <select id="groupBy" class="w-full border rounded px-3 py-2">
+            <option value="kelas">Per Kelas</option>
+            <option value="guru">Per Guru</option>
+          </select>
+        </div>
+        <div class="md:col-span-2 flex items-end gap-2">
+          <button id="btnExportReport" class="btn-outline">Export ke Sheet</button>
+          <button id="btnPrintList" class="btn-outline">Cetak Daftar Hadir</button>
+          <div id="dateInfo" class="text-sm text-gray-500"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid md:grid-cols-4 gap-4">
+      <div class="bg-white shadow rounded-xl p-4">
+        <div class="text-xs text-gray-500">Total Absen (hari ini)</div>
+        <div id="cardTotal" class="text-2xl font-semibold">0</div>
+      </div>
+      <div class="bg-white shadow rounded-xl p-4">
+        <div class="text-xs text-gray-500">Belum Sinkron</div>
+        <div id="cardUnsynced" class="text-2xl font-semibold">0</div>
+      </div>
+      <div class="bg-white shadow rounded-xl p-4">
+        <div class="text-xs text-gray-500">Master Siswa</div>
+        <div id="cardSiswa" class="text-2xl font-semibold">0</div>
+      </div>
+      <div class="bg-white shadow rounded-xl p-4">
+        <div class="text-xs text-gray-500">Guru • Mapel</div>
+        <div class="text-2xl font-semibold"><span id="cardGuru">0</span> • <span id="cardMapel">0</span></div>
+      </div>
+    </section>
+
+    <section class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white shadow rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-semibold">Distribusi Status (Hari Ini)</h2>
+          <div id="chartInfo" class="text-xs text-gray-500"></div>
+        </div>
+        <div class="relative">
+          <canvas id="statusChart" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white shadow rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-semibold">Rekap Bar</h2>
+          <div class="flex items-center gap-2 text-sm">
+            <label for="barGroup">Kelompok:</label>
+            <select id="barGroup" class="border rounded px-2 py-1">
+              <option value="jam">Jam Ke</option>
+              <option value="mode">Mode (Mapel/Kegiatan)</option>
+            </select>
+          </div>
+        </div>
+        <div class="relative">
+          <canvas id="barChart" height="140"></canvas>
+        </div>
+        <div id="barInfo" class="text-xs text-gray-500 mt-2"></div>
+      </div>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Status per Jam (Stacked)</h2>
+      </div>
+      <canvas id="stackedChart" height="160"></canvas>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Rekap Rentang (Per <span id="groupLabel">Kelas</span>)</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="th">Kelompok</th>
+              <th class="th">Hadir</th>
+              <th class="th">Izin</th>
+              <th class="th">Sakit</th>
+              <th class="th">Alpa</th>
+              <th class="th">Terlambat</th>
+              <th class="th">Total</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyRecap" class="divide-y"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white shadow rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-semibold">Top Hadir / Terlambat</h2>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="text-xs text-gray-500 mb-1">Top Hadir</div>
+            <ol id="listTopHadir" class="text-sm list-decimal pl-4"></ol>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500 mb-1">Top Terlambat</div>
+            <ol id="listTopLate" class="text-sm list-decimal pl-4"></ol>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white shadow rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-semibold">Top Mapel/Kegiatan</h2>
+        </div>
+        <canvas id="topMKChart" height="140"></canvas>
+      </div>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Heatmap Kehadiran per Jam</h2>
+      </div>
+      <div id="heatmap" class="grid grid-cols-12 gap-1"></div>
+      <div class="text-xs text-gray-500 mt-2">Semakin gelap = semakin banyak</div>
+    </section>
+  </main>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+</body>
+</html>

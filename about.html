@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tentang Aplikasi - Absensi PWA</title>
+  <meta name="theme-color" content="#0ea5e9" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <h1 class="font-semibold text-lg">Tentang Aplikasi</h1>
+      <div class="flex items-center gap-3">
+        <a href="/index.html" class="text-blue-600 hover:underline text-sm">Absen</a>
+        <a href="/dashboard.html" class="text-blue-600 hover:underline text-sm">Dashboard</a>
+        <a href="/settings.html" class="text-blue-600 hover:underline text-sm">Pengaturan</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <section class="bg-white shadow rounded-xl p-4">
+      <h2 class="font-semibold mb-2">Pembuat</h2>
+      <div class="text-sm">
+        <div class="mb-2">Nama: <span class="font-medium">Eliash El Hasan</span></div>
+        <div class="space-x-3">
+          <a href="https://eliash9.github.io/" target="_blank" rel="noreferrer" class="text-blue-600 hover:underline">GitHub</a>
+          <a href="https://threads.com/@eliash.el" target="_blank" rel="noreferrer" class="text-blue-600 hover:underline">Threads</a>
+          
+        </div>
+      </div>
+    </section>
+    <section class="bg-white shadow rounded-xl p-4">
+      <h2 class="font-semibold mb-2">Informasi Aplikasi</h2>
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div>
+          <div class="text-gray-500">Nama Aplikasi</div>
+          <div class="font-medium">Absensi Siswa (PWA)</div>
+        </div>
+        <div>
+          <div class="text-gray-500">Versi</div>
+          <div class="font-medium">v0.1.0</div>
+        </div>
+        <div>
+          <div class="text-gray-500">Status</div>
+          <div class="font-medium">Offline‑first (PWA)</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white shadow rounded-xl p-4 space-y-2 text-sm">
+      <h2 class="font-semibold">Lisensi</h2>
+      <p>Aplikasi ini dirilis di bawah lisensi MIT.</p>
+      <pre class="bg-gray-50 border rounded p-3 whitespace-pre-wrap text-xs">MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+    </section>
+  </main>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+</body>
+</html>

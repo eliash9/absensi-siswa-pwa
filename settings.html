@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pengaturan & Master Data - Absensi PWA</title>
+  <meta name="theme-color" content="#0ea5e9" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/js/vendor/dexie.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script type="module" src="/js/settings.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <h1 class="font-semibold text-lg">Pengaturan & Master Data</h1>
+      <div class="flex items-center gap-3">
+        <a href="/" class="text-blue-600 hover:underline text-sm">Kembali</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-8">
+    <!-- KEAMANAN -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <h2 class="font-semibold text-lg">Keamanan</h2>
+      <div class="grid md:grid-cols-6 gap-3 items-end">
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">PIN Baru (opsional)</label>
+          <input id="pinInput" type="password" class="w-full border rounded px-3 py-2" placeholder="****" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Kunci Pengaturan</label>
+          <select id="lockSettings" class="w-full border rounded px-3 py-2">
+            <option value="0">Tidak</option>
+            <option value="1">Ya</option>
+          </select>
+        </div>
+        <div class="flex flex-wrap gap-2 md:col-span-3">
+          <button id="btnSaveSecurity" class="btn">Simpan Keamanan</button>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500">Jika dikunci, saat membuka halaman Pengaturan Anda akan diminta memasukkan PIN.</p>
+    </section>
+
+    <!-- PREFERENSI WAKTU & KIOS -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <h2 class="font-semibold text-lg">Preferensi</h2>
+      <div class="grid md:grid-cols-6 gap-3 items-end">
+        <div>
+          <label class="block text-sm mb-1">Format Tanggal/Jam</label>
+          <select id="timeFormat" class="w-full border rounded px-3 py-2">
+            <option value="ddmmyy">dd/MM/yyyy HH:mm:ss</option>
+            <option value="yymmdd">yyyy-MM-dd HH:mm:ss</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Zona Waktu</label>
+          <select id="tz" class="w-full border rounded px-3 py-2">
+            <option value="local">Local</option>
+            <option value="WIB">WIB (UTC+7)</option>
+            <option value="WITA">WITA (UTC+8)</option>
+            <option value="WIT">WIT (UTC+9)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Mode Kios</label>
+          <select id="kiosk" class="w-full border rounded px-3 py-2">
+            <option value="0">Nonaktif</option>
+            <option value="1">Aktif</option>
+          </select>
+        </div>
+        <div class="flex flex-wrap gap-2 md:col-span-3">
+          <button id="btnSavePrefs" class="btn">Simpan Preferensi</button>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500">Format ini digunakan untuk tampilan UI dan ekspor CSV. Mode Kios mencoba layar penuh dan mencegah layar tidur.</p>
+    </section>
+    <!-- SINKRON SEMUA -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <h2 class="font-semibold text-lg">Sinkron Semua (Rentang Tanggal)</h2>
+      <div class="grid md:grid-cols-6 gap-3 items-end">
+        <div>
+          <label class="block text-sm mb-1">Mulai</label>
+          <input id="syncStart" type="date" class="w-full border rounded px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Selesai</label>
+          <input id="syncEnd" type="date" class="w-full border rounded px-3 py-2" />
+        </div>
+        <div class="flex flex-wrap gap-2 md:col-span-3">
+          <button id="btnSyncAll" class="btn">Sync Semua</button>
+          <span id="syncAllInfo" class="text-xs text-gray-500"></span>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500">Akan mengirim entri lokal yang belum sinkron, lalu menarik absensi dari Google Sheet untuk tiap tanggal dalam rentang.</p>
+    </section>
+    <!-- PENGATURAN SINKRONISASI -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <h2 class="font-semibold text-lg">Pengaturan Sinkronisasi</h2>
+      <div class="grid md:grid-cols-6 gap-3 items-end">
+        <div class="md:col-span-5">
+          <label class="block text-sm mb-1">GAS Web App URL</label>
+          <input id="gasUrl" class="w-full border rounded px-3 py-2" placeholder="https://script.google.com/macros/s/.../exec" />
+        </div>
+        <div class="flex flex-wrap gap-2 md:col-span-6">
+          <button id="btnSaveGas" class="btn">Simpan</button>
+          <button id="btnTestGas" class="btn-outline">Tes</button>
+          <button id="btnSyncMasters" class="btn-outline">Sinkron Master</button>
+          <button id="btnPullMasters" class="btn-outline">Ambil Master dari Sheet</button>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500">URL dapat diperoleh dari Apps Script → Deploy Web App. Dipakai saat sinkron.</p>
+    </section>
+
+    <!-- MASTER SISWA -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-lg">Master Siswa</h2>
+        <div class="text-sm text-gray-500" id="siswaInfo"></div>
+      </div>
+      <div class="grid md:grid-cols-5 gap-3">
+        <input id="siswaIdInput" class="border rounded px-3 py-2" placeholder="SISWAID" />
+        <input id="siswaNamaInput" class="border rounded px-3 py-2" placeholder="Nama" />
+        <input id="siswaKelasInput" class="border rounded px-3 py-2" placeholder="Kelas (opsional)" />
+        <button id="btnAddSiswa" class="btn">Tambah</button>
+        <div class="flex flex-wrap gap-2 md:col-span-2">
+          <button id="btnImportSiswa" class="btn-outline">Import CSV</button>
+          <input id="fileImportSiswa" type="file" accept=".csv" class="hidden" />
+          <button id="btnExportSiswa" class="btn-outline">Export CSV</button>
+          <button id="btnTemplateSiswa" class="btn-outline">Unduh Template</button>
+          <button id="btnPrintQrFiltered" class="btn-outline">Cetak QR (Filter)</button>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-3">
+        <input id="siswaFilter" class="border rounded px-3 py-2" placeholder="Cari siswa..." />
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="th">SiswaID</th>
+              <th class="th">Nama</th>
+              <th class="th">Kelas</th>
+              <th class="th"></th>
+            </tr>
+          </thead>
+          <tbody id="tbodySiswa" class="divide-y"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MASTER GURU -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-lg">Master Guru</h2>
+        <div class="text-sm text-gray-500" id="guruInfo"></div>
+      </div>
+      <div class="grid md:grid-cols-4 gap-3">
+        <input id="guruIdInput" class="border rounded px-3 py-2" placeholder="GURUID" />
+        <input id="guruNamaInput" class="border rounded px-3 py-2" placeholder="Nama" />
+        <button id="btnAddGuru" class="btn">Tambah</button>
+        <div class="flex flex-wrap gap-2 md:col-span-2">
+          <button id="btnImportGuru" class="btn-outline">Import CSV</button>
+          <input id="fileImportGuru" type="file" accept=".csv" class="hidden" />
+          <button id="btnExportGuru" class="btn-outline">Export CSV</button>
+          <button id="btnTemplateGuru" class="btn-outline">Unduh Template</button>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-3">
+        <input id="guruFilter" class="border rounded px-3 py-2" placeholder="Cari guru..." />
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="th">GuruID</th>
+              <th class="th">Nama</th>
+              <th class="th"></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyGuru" class="divide-y"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MASTER MAPEL -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-lg">Master Mata Pelajaran</h2>
+        <div class="text-sm text-gray-500" id="mapelInfo"></div>
+      </div>
+      <div class="grid md:grid-cols-4 gap-3">
+        <input id="mapelIdInput" class="border rounded px-3 py-2" placeholder="MAPELID" />
+        <input id="mapelNamaInput" class="border rounded px-3 py-2" placeholder="Nama Mapel" />
+        <button id="btnAddMapel" class="btn">Tambah</button>
+        <div class="flex flex-wrap gap-2 md:col-span-2">
+          <button id="btnImportMapel" class="btn-outline">Import CSV</button>
+          <input id="fileImportMapel" type="file" accept=".csv" class="hidden" />
+          <button id="btnExportMapel" class="btn-outline">Export CSV</button>
+          <button id="btnTemplateMapel" class="btn-outline">Unduh Template</button>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-3">
+        <input id="mapelFilter" class="border rounded px-3 py-2" placeholder="Cari mapel..." />
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="th">MapelID</th>
+              <th class="th">Nama</th>
+              <th class="th"></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyMapel" class="divide-y"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- IMPORT / EXPORT GABUNGAN -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <h2 class="font-semibold text-lg">Import / Export Gabungan</h2>
+      <div class="flex flex-wrap gap-2 items-center">
+        <button id="btnImportCombined" class="btn-outline">Import Gabungan (JSON/ZIP)</button>
+        <input id="fileImportCombined" type="file" accept=".json,.zip" class="hidden" />
+        <button id="btnExportCombinedZip" class="btn-outline">Export Gabungan (ZIP)</button>
+        <button id="btnExportCombinedJson" class="btn-outline">Export Gabungan (JSON)</button>
+      </div>
+      <p class="text-xs text-gray-500">ZIP berisi: siswa.csv, guru.csv, mapel.csv. JSON berisi objek { siswa, guru, mapel }.</p>
+    </section>
+
+    <!-- ANTRIAN OFFLINE -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-lg">Antrian Offline</h2>
+        <div class="flex gap-2">
+          <button id="btnSyncQueue" class="btn">Sinkron Sekarang</button>
+          <span id="queueInfo" class="text-xs text-gray-500"></span>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="th">Tanggal</th>
+              <th class="th">Waktu</th>
+              <th class="th">Siswa</th>
+              <th class="th">Mode</th>
+              <th class="th">Mapel/Keg</th>
+              <th class="th"></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyQueue" class="divide-y"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- KELOLA TEMPLATE -->
+    <section class="bg-white shadow rounded-xl p-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-lg">Kelola Template</h2>
+        <div class="text-sm text-gray-500" id="templateInfo"></div>
+      </div>
+      <div class="grid md:grid-cols-6 gap-3">
+        <input id="templateNameInput" class="border rounded px-3 py-2" placeholder="Nama Template" />
+        <div>
+          <select id="templateMode" class="border rounded px-3 py-2">
+            <option value="mapel">Mapel</option>
+            <option value="kegiatan">Kegiatan</option>
+          </select>
+        </div>
+        <div id="templateMapelWrap">
+          <input id="templateMapel" class="border rounded px-3 py-2" placeholder="Nama Mapel" />
+        </div>
+        <div id="templateKegiatanWrap" class="hidden">
+          <input id="templateKegiatan" class="border rounded px-3 py-2" placeholder="Nama Kegiatan" />
+        </div>
+        <input id="templateJamKe" type="number" min="1" class="border rounded px-3 py-2" placeholder="Jam Ke" />
+        <input id="templatePJ" class="border rounded px-3 py-2" placeholder="Guru/PJ" />
+        <input id="templateLokasi" class="border rounded px-3 py-2" placeholder="Lokasi" />
+        <div class="md:col-span-6 flex gap-2">
+          <button id="btnAddTemplate" class="btn">Tambah</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="th">Nama</th>
+              <th class="th">Mode</th>
+              <th class="th">Mapel/Kegiatan</th>
+              <th class="th">Jam</th>
+              <th class="th">Guru/PJ</th>
+              <th class="th">Lokasi</th>
+              <th class="th"></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyTemplates" class="divide-y"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+</body>
+</html>
