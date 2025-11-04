@@ -468,7 +468,7 @@ return ContentService.createTextOutput(JSON.stringify(obj))
   </script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=19', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
+      navigator.serviceWorker.register('sw.js?v=20', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
     }
     const btn = document.getElementById('btnCopy');
     const pre = document.getElementById('code');

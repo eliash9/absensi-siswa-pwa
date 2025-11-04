@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    (function(){
+      try{
+        var key='theme';
+        var saved=localStorage.getItem(key);
+        var prefersDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme=saved||(prefersDark?'dark':'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      }catch(e){}
+    })();
+  </script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>History - Absensi PWA</title>
+  <meta name="theme-color" content="#0ea5e9" />
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    (function () {
+      var key = 'theme';
+      function ensureToggle() {
+        if (!document.body || document.getElementById('theme-toggle')) return;
+        var btn = document.createElement('button');
+        btn.id = 'theme-toggle';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', 'Toggle theme');
+        btn.title = 'Toggle theme';
+        function cur() { return document.documentElement.getAttribute('data-theme') || 'light'; }
+        function setIcon(t) { btn.textContent = t === 'dark' ? '🌙' : '☀️'; }
+        setIcon(cur());
+        btn.addEventListener('click', function () {
+          var next = cur() === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          try { localStorage.setItem(key, next); } catch (_) {}
+          setIcon(next);
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) {
+            var color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+            meta.setAttribute('content', color || (next === 'dark' ? '#0F172A' : '#F8FAFC'));
+          }
+        });
+        document.body.appendChild(btn);
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureToggle); else ensureToggle();
+    })();
+  </script>
+  <script defer src="js/vendor/dexie.min.js"></script>
+  <script type="module" src="js/history.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js?v=20', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
+    }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <h1 class="font-semibold text-lg truncate">History</h1>
+      <div class="flex flex-wrap items-center gap-2 md:gap-3 justify-end text-xs md:text-sm">
+        <a href="index.html" class="text-blue-600 hover:underline">Absen</a>
+        <a href="dashboard.html" class="text-blue-600 hover:underline">Dashboard</a>
+        <a href="panduan.html" class="text-blue-600 hover:underline">Panduan</a>
+        <a href="settings.html" class="text-blue-600 hover:underline">Pengaturan</a>
+        <span id="net-badge" class="px-2 py-1 rounded bg-gray-200 shrink-0">Offline</span>
+        <span id="unsynced-badge" class="px-2 py-1 rounded bg-yellow-100 shrink-0">Belum sinkron: 0</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <section class="bg-white shadow rounded-xl p-4">
+      <div class="grid md:grid-cols-5 gap-3 items-end">
+        <div>
+          <label class="block text-sm mb-1">Tanggal</label>
+          <input id="tanggalHistory" type="date" class="w-full border rounded px-3 py-2" />
+        </div>
+        <div class="flex items-end gap-2 md:col-span-2">
+          <button id="btnSyncHist" class="btn-outline" aria-label="Sinkron">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7v6h6" />
+              <path d="M20 17v-6h-6" />
+              <path d="M20 17a8 8 0 01-14 2M4 7a8 8 0 0114-2" />
+            </svg>
+            <span class="hidden sm:inline">Sinkron</span>
+          </button>
+          <button id="btnExportCSVHistory" class="btn-outline" aria-label="Export CSV">
+            <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 4v10m0 0l-4-4m4 4l4-4" />
+              <path d="M4 20h16" />
+            </svg>
+            <span class="hidden sm:inline">Export CSV</span>
+          </button>
+          <div id="histInfo" class="text-sm text-gray-500"></div>
+        </div>
+        <div class="md:col-span-2 grid grid-cols-2 gap-2">
+          <select id="filterMode" class="border rounded px-3 py-2">
+            <option value="">Mode: Semua</option>
+            <option value="mapel">Mapel</option>
+            <option value="kegiatan">Kegiatan</option>
+          </select>
+          <select id="filterSynced" class="border rounded px-3 py-2">
+            <option value="">Synced: Semua</option>
+            <option value="1">Sudah</option>
+            <option value="0">Belum</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-4 gap-3 mt-3">
+        <input id="filterQ" class="border rounded px-3 py-2 md:col-span-2" placeholder="Cari nama/ID/mapel/kegiatan/PJ" />
+        <select id="filterStatus" class="border rounded px-3 py-2">
+          <option value="">Status: Semua</option>
+          <option>Hadir</option>
+          <option>Izin</option>
+          <option>Sakit</option>
+          <option>Alpa</option>
+        </select>
+        <div class="text-sm text-gray-500 flex items-center">Hasil tampil di bawah</div>
+      </div>
+    </section>
+
+    <!-- Daftar (mobile card + desktop table) -->
+    <section class="bg-white shadow rounded-xl p-4">
+      <!-- Mobile cards -->
+      <div id="listCards" class="space-y-2 sm:hidden"></div>
+      <!-- Desktop table -->
+      <div class="hidden sm:block overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="th">Waktu</th>
+              <th class="th">Siswa</th>
+              <th class="th">Status</th>
+              <th class="th">Mode</th>
+              <th class="th">Mapel/Kegiatan</th>
+              <th class="th">Jam</th>
+              <th class="th">Guru/PJ</th>
+              <th class="th">Synced</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyHist" class="divide-y"></tbody>
+        </table>
+      </div>
+      <div id="pagerHist" class="flex items-center justify-between mt-3 hidden">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 text-sm">
+            <label for="pageSizeHist">Baris/hal:</label>
+            <select id="pageSizeHist" class="border rounded px-2 py-1">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnPrevHist" class="btn-outline" aria-label="Halaman Sebelumnya">
+              <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 19l-7-7 7-7" />
+              </svg>
+              <span class="hidden sm:inline">Prev</span>
+            </button>
+            <button id="btnNextHist" class="btn-outline" aria-label="Halaman Berikutnya">
+              <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 5l7 7-7 7" />
+              </svg>
+              <span class="hidden sm:inline">Next</span>
+            </button>
+          </div>
+        </div>
+        <div id="pageInfoHist" class="text-xs text-gray-500"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Mobile bottom nav (small screens) -->
+  <nav class="mobile-nav sm:hidden" role="navigation" aria-label="Navigasi bawah">
+    <div class="nav-grid">
+      <a href="index.html" data-path="index.html" aria-label="Absen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="4" width="14" height="16" rx="2" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+        <span class="text-xs">Absen</span>
+      </a>
+      <a href="history.html" data-path="history.html" aria-label="History">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 109 9" />
+          <path d="M12 7v5l3 3" />
+        </svg>
+        <span class="text-xs">History</span>
+      </a>
+      <a href="dashboard.html" data-path="dashboard.html" aria-label="Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h6V4H3zM15 20h6v-8h-6zM3 20h6v-6H3zM15 12h6V4h-6z" />
+        </svg>
+        <span class="text-xs">Dashboard</span>
+      </a>
+      <a href="panduan.html" data-path="panduan.html" aria-label="Panduan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19a2 2 0 002 2h12" />
+          <path d="M20 21V7a2 2 0 00-2-2h-8l-4 4v12" />
+        </svg>
+        <span class="text-xs">Panduan</span>
+      </a>
+      <a href="settings.html" data-path="settings.html" aria-label="Pengaturan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06A2 2 0 015.94 3.2l.06.06a1.65 1.65 0 001.82.33H8a1.65 1.65 0 001-1.51V2a2 2 0 014 0v.09a1.65 1.65 0 001 1.51h.18a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V8a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+        <span class="text-xs">Pengaturan</span>
+      </a>
+    </div>
+  </nav>
+  <script>
+    (function(){
+      try{
+        var href = location.pathname.split('/').pop() || 'history.html';
+        document.querySelectorAll('.mobile-nav a').forEach(function(a){
+          if(a.getAttribute('data-path') === href){ a.classList.add('active'); }
+        });
+      }catch(e){}
+    })();
+  </script>
+</body>
+</html>
+

@@ -11,8 +11,17 @@ import { showToast } from './ui.js';
 const $ = (s)=>document.querySelector(s);
 
 function csvParse(text){
-  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim().length>0);
+  // Remove BOM, normalize newlines
+  const src = (text || '').replace(/^\uFEFF/, '');
+  const lines = src.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim().length>0);
   if(lines.length===0) return [];
+  // Auto-detect delimiter (comma vs semicolon) based on header line
+  const headerLine = lines[0];
+  let delim = ',';
+  const count = (s,ch)=> (s.match(new RegExp((ch==='|'?'\|':ch).replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'))||[]).length;
+  const cComma = count(headerLine, ',');
+  const cSemi = count(headerLine, ';');
+  if(cSemi > cComma) delim = ';';
   const split = (line)=>{
     const result=[]; let cur=''; let inQ=false;
     for(let i=0;i<line.length;i++){
@@ -20,13 +29,13 @@ function csvParse(text){
       if(ch==='"'){
         if(inQ && line[i+1]==='"'){ cur+='"'; i++; }
         else inQ=!inQ;
-      }else if(ch===',' && !inQ){ result.push(cur); cur=''; }
+      }else if(ch===delim && !inQ){ result.push(cur); cur=''; }
       else{ cur+=ch; }
     }
     result.push(cur);
     return result.map(s=>s.trim());
   };
-  const headers = split(lines[0]).map(h=>h.replace(/^"|"$/g,''));
+  const headers = split(headerLine).map(h=>h.replace(/^"|"$/g,''));
   return lines.slice(1).map(line=>{
     const cells = split(line).map(c=>c.replace(/^"|"$/g,''));
     const obj={}; headers.forEach((h,idx)=>obj[h]=cells[idx]);
@@ -52,6 +61,22 @@ function download(filename, content, type='text/plain'){
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
+}
+
+// Helper: pick value from possible column names (case/format tolerant)
+function pick(row, ...names){
+  if(!row) return '';
+  const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const keys = Object.keys(row);
+  // direct match first
+  for(const n of names){ if(row[n] != null) return String(row[n]).trim(); }
+  // case-insensitive and normalized match
+  const normMap = new Map(keys.map(k=>[norm(k), k]));
+  for(const n of names){
+    const key = normMap.get(norm(n));
+    if(key && row[key] != null) return String(row[key]).trim();
+  }
+  return '';
 }
 
 // Pengaturan GAS
@@ -234,7 +259,11 @@ function bindSiswa(){
     const file = e.target.files[0]; if(!file) return;
     const text = await file.text();
     const rows = csvParse(text);
-    const prepared = rows.map(r=>({ siswaId:(r.siswaId||'').trim(), nama:(r.nama||'').trim(), kelas:(r.kelas||'').trim() })).filter(r=>r.siswaId && r.nama);
+    const prepared = rows.map(r=>({
+      siswaId: pick(r, 'siswaId','siswa_id','siswa id','id','nis','nisn'),
+      nama: pick(r, 'nama','name'),
+      kelas: pick(r, 'kelas','class','kelas_id','grade')
+    })).filter(r=>r.siswaId && r.nama);
     if(!prepared.length){ alert('Tidak ada data valid.'); return; }
     await bulkUpsertSiswa(prepared);
     e.target.value='';
@@ -384,7 +413,10 @@ function bindGuru(){
     const file = e.target.files[0]; if(!file) return;
     const text = await file.text();
     const rows = csvParse(text);
-    const prepared = rows.map(r=>({ guruId:(r.guruId||'').trim(), nama:(r.nama||'').trim() })).filter(r=>r.guruId && r.nama);
+    const prepared = rows.map(r=>({
+      guruId: pick(r, 'guruId','guru_id','guru id','id','nip','kode'),
+      nama: pick(r, 'nama','name')
+    })).filter(r=>r.guruId && r.nama);
     if(!prepared.length){ alert('Tidak ada data valid.'); return; }
     await bulkUpsertGuru(prepared);
     e.target.value='';
@@ -451,7 +483,10 @@ function bindMapel(){
     const file = e.target.files[0]; if(!file) return;
     const text = await file.text();
     const rows = csvParse(text);
-    const prepared = rows.map(r=>({ mapelId:(r.mapelId||'').trim(), nama:(r.nama||'').trim() })).filter(r=>r.mapelId && r.nama);
+    const prepared = rows.map(r=>({
+      mapelId: pick(r, 'mapelId','mapel_id','mapel id','kode','id','kode_mapel'),
+      nama: pick(r, 'nama','name','mapel')
+    })).filter(r=>r.mapelId && r.nama);
     if(!prepared.length){ alert('Tidak ada data valid.'); return; }
     await bulkUpsertMapel(prepared);
     e.target.value='';
@@ -554,15 +589,15 @@ async function renderTemplates(){
       </td>`;
     tbody.appendChild(tr);
   });
-  if(info) info.textContent = `${rows.length} template`;
+  if(info) info.textContent = `${rows.length} jadwal`;
   tbody.querySelectorAll('button').forEach(btn=>{
     btn.addEventListener('click', async (e)=>{
       const name = e.target.getAttribute('data-name');
       const act = e.target.getAttribute('data-act');
       if(act==='del'){
-        if(confirm('Hapus template '+name+'?')){ await deleteTemplate(name); renderTemplates(); }
+        if(confirm('Hapus jadwal '+name+'?')){ await deleteTemplate(name); renderTemplates(); }
       }else if(act==='rename'){
-        const newName = prompt('Nama template baru', name);
+        const newName = prompt('Nama jadwal baru', name);
         if(newName && newName.trim()){
           const list = await listTemplates();
           const t = list.find(x=>x.name===name);
@@ -584,6 +619,16 @@ function bindTemplates(){
   };
   modeEl?.addEventListener('change', switchMode);
   switchMode();
+  // Populate datalists from master
+  (async ()=>{
+    try{
+      const [mapels, gurus] = await Promise.all([listMapel(), listGuru()]);
+      const dlM = document.getElementById('settingsMapelList');
+      const dlG = document.getElementById('settingsGuruList');
+      if(dlM){ dlM.innerHTML = mapels.map(m=>`<option value="${m.nama}"></option>`).join(''); }
+      if(dlG){ dlG.innerHTML = gurus.map(g=>`<option value="${g.nama}"></option>`).join(''); }
+    }catch(err){ console.warn('Gagal memuat master untuk jadwal', err); }
+  })();
 
   document.getElementById('btnAddTemplate')?.addEventListener('click', async ()=>{
     const name = (document.getElementById('templateNameInput')?.value||'').trim();
@@ -593,7 +638,7 @@ function bindTemplates(){
     const jamKe = Number(document.getElementById('templateJamKe')?.value||1);
     const penanggungJawab = (document.getElementById('templatePJ')?.value||'').trim();
     const lokasi = (document.getElementById('templateLokasi')?.value||'').trim();
-    if(!name){ alert('Nama template wajib.'); return; }
+    if(!name){ alert('Nama jadwal wajib.'); return; }
     if(mode==='mapel' && !mapel){ alert('Nama mapel wajib.'); return; }
     if(mode==='kegiatan' && !kegiatan){ alert('Nama kegiatan wajib.'); return; }
     await upsertTemplate({ name, mode, mapel, kegiatan, jamKe, penanggungJawab, lokasi });
@@ -650,9 +695,9 @@ function bindCombined(){
         const sText = await tryCsv('siswa.csv');
         const gText = await tryCsv('guru.csv');
         const mText = await tryCsv('mapel.csv');
-        if(sText){ const rows = csvParse(sText); const prepared = rows.map(r=>({ siswaId:(r.siswaId||'').trim(), nama:(r.nama||'').trim(), kelas:(r.kelas||'').trim() })).filter(r=>r.siswaId&&r.nama); await bulkUpsertSiswa(prepared); }
-        if(gText){ const rows = csvParse(gText); const prepared = rows.map(r=>({ guruId:(r.guruId||'').trim(), nama:(r.nama||'').trim() })).filter(r=>r.guruId&&r.nama); await bulkUpsertGuru(prepared); }
-        if(mText){ const rows = csvParse(mText); const prepared = rows.map(r=>({ mapelId:(r.mapelId||'').trim(), nama:(r.nama||'').trim() })).filter(r=>r.mapelId&&r.nama); await bulkUpsertMapel(prepared); }
+        if(sText){ const rows = csvParse(sText); const prepared = rows.map(r=>({ siswaId:pick(r,'siswaId','siswa_id','siswa id','id','nis','nisn'), nama:pick(r,'nama','name'), kelas:pick(r,'kelas','class','kelas_id','grade') })).filter(r=>r.siswaId&&r.nama); await bulkUpsertSiswa(prepared); }
+        if(gText){ const rows = csvParse(gText); const prepared = rows.map(r=>({ guruId:pick(r,'guruId','guru_id','guru id','id','nip','kode'), nama:pick(r,'nama','name') })).filter(r=>r.guruId&&r.nama); await bulkUpsertGuru(prepared); }
+        if(mText){ const rows = csvParse(mText); const prepared = rows.map(r=>({ mapelId:pick(r,'mapelId','mapel_id','mapel id','kode','id','kode_mapel'), nama:pick(r,'nama','name','mapel') })).filter(r=>r.mapelId&&r.nama); await bulkUpsertMapel(prepared); }
         alert('Import ZIP selesai');
       }else{
         alert('Format file tidak didukung. Gunakan .json atau .zip');

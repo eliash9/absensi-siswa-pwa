@@ -55,7 +55,7 @@
   <script type="module" src="js/settings.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=19', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
+      navigator.serviceWorker.register('sw.js?v=20', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
     }
   </script>
 </head>
@@ -478,36 +478,56 @@
       </div>
     </section>
 
-    <!-- KELOLA TEMPLATE -->
+    <!-- KELOLA JADWAL/Kegiatan -->
     <section class="bg-white shadow rounded-xl p-4 space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="font-semibold text-lg">Kelola Template</h2>
+        <h2 class="font-semibold text-lg">Kelola Jadwal</h2>
         <div class="text-sm text-gray-500" id="templateInfo"></div>
       </div>
-      <div class="grid md:grid-cols-6 gap-3">
-        <input id="templateNameInput" class="border rounded px-3 py-2" placeholder="Nama Template" />
+      <div class="grid md:grid-cols-3 gap-3">
+        <div class="md:col-span-2">
+          <label class="block text-sm mb-1">Nama Jadwal</label>
+          <input id="templateNameInput" class="border rounded px-3 py-2 w-full" placeholder="Contoh: Kelas 9A - Senin Jam 1" />
+        </div>
         <div>
-          <select id="templateMode" class="border rounded px-3 py-2">
+          <label class="block text-sm mb-1">Mode</label>
+          <select id="templateMode" class="border rounded px-3 py-2 w-full">
             <option value="mapel">Mapel</option>
             <option value="kegiatan">Kegiatan</option>
           </select>
         </div>
-        <div id="templateMapelWrap">
-          <input id="templateMapel" class="border rounded px-3 py-2" placeholder="Nama Mapel" />
+
+        <div id="templateMapelWrap" class="md:col-span-2">
+          <label class="block text-sm mb-1">Mata Pelajaran</label>
+          <input id="templateMapel" list="settingsMapelList" class="border rounded px-3 py-2 w-full" placeholder="Pilih dari master atau ketik manual" />
+          <datalist id="settingsMapelList"></datalist>
         </div>
-        <div id="templateKegiatanWrap" class="hidden">
-          <input id="templateKegiatan" class="border rounded px-3 py-2" placeholder="Nama Kegiatan" />
+        <div id="templateKegiatanWrap" class="hidden md:col-span-2">
+          <label class="block text-sm mb-1">Nama Kegiatan</label>
+          <input id="templateKegiatan" class="border rounded px-3 py-2 w-full" placeholder="Ujian, Ekstrakurikuler, ..." />
         </div>
-        <input id="templateJamKe" type="number" min="1" class="border rounded px-3 py-2" placeholder="Jam Ke" />
-        <input id="templatePJ" class="border rounded px-3 py-2" placeholder="Guru/PJ" />
-        <input id="templateLokasi" class="border rounded px-3 py-2" placeholder="Lokasi" />
-        <div class="md:col-span-6 flex gap-2">
-          <button id="btnAddTemplate" class="btn" aria-label="Tambah Template">
+
+        <div>
+          <label class="block text-sm mb-1">Jam Ke</label>
+          <input id="templateJamKe" type="number" min="1" class="border rounded px-3 py-2 w-full" placeholder="1" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Guru / PJ</label>
+          <input id="templatePJ" list="settingsGuruList" class="border rounded px-3 py-2 w-full" placeholder="Pilih dari master atau ketik manual" />
+          <datalist id="settingsGuruList"></datalist>
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Lokasi</label>
+          <input id="templateLokasi" class="border rounded px-3 py-2 w-full" placeholder="Ruang, Lab, Lapangan, ..." />
+        </div>
+
+        <div class="md:col-span-3 flex gap-2">
+          <button id="btnAddTemplate" class="btn" aria-label="Simpan Jadwal">
             <svg aria-hidden="true" class="w-5 h-5 sm:mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 5v14" />
               <path d="M5 12h14" />
             </svg>
-            <span class="hidden sm:inline">Tambah</span>
+            <span class="hidden sm:inline">Simpan Jadwal</span>
           </button>
         </div>
       </div>
@@ -574,7 +594,7 @@
   </script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=19', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
+      navigator.serviceWorker.register('sw.js?v=20', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
     }
   </script>
 </body>

@@ -101,7 +101,18 @@ a{ color: var(--color-primary); }
   :root{ --toggle-bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 16px); }
 }
 .mobile-nav{ position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); box-shadow: 0 -2px 8px rgba(0,0,0,.04); z-index: 50; padding: 6px 8px; }
-.mobile-nav .nav-grid{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.mobile-nav .nav-grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 6px; }
 .mobile-nav a{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; border-radius: 10px; text-decoration: none; color: var(--text-muted); }
 .mobile-nav a.active{ color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
 .mobile-nav svg{ width: 22px; height: 22px; }
+
+/* Shared surface card */
+.surface { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+
+/* Tabs styling for absen card */
+#absenTabs{ border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); }
+#absenTabs .tab-bar{ background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%); padding: 6px; gap: 6px; }
+#absenTabs .tab-btn{ appearance: none; border: none; outline: none; cursor: pointer; color: rgba(255,255,255,0.85); background: transparent; border-radius: 9999px; padding: 6px 12px; font-weight: 600; letter-spacing: .2px; transition: filter .15s ease, background-color .15s ease, color .15s ease; }
+#absenTabs .tab-btn:hover{ color: #fff; filter: brightness(1.03); }
+#absenTabs .tab-btn.active{ background: #ffffff; color: var(--color-primary); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+#absenTabs .tab-panel{ }

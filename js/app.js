@@ -6,6 +6,8 @@ import { showToast } from './ui.js';
 const $ = (s)=>document.querySelector(s);
 let TZ = 'local';
 let TIME_FORMAT = 'ddmmyy';
+let ACTIVE_JADWAL = null; // { name, mode, mapel, kegiatan, jamKe, penanggungJawab, lokasi }
+let SCAN_RUNNING = false;
 const todayISO = ()=>{
   const d = new Date();
   const target = applyTz(d);
@@ -63,7 +65,43 @@ function formatTanggalWaktuID(iso, waktu){
   return `${formatTanggalID(iso)} ${normalizeWaktu(waktu)}`.trim();
 }
 
+async function populateJadwalList(){
+  try{
+    const arr = await listTemplates();
+    const dl = document.getElementById('jadwalList');
+    if(dl){ dl.innerHTML = arr.map(t=>`<option value="${t.name}"></option>`).join(''); }
+  }catch(err){ console.warn('Gagal memuat jadwal', err); }
+}
+
+function updateJadwalUI(){
+  const wrap = document.getElementById('manualCtrlWrap');
+  const info = document.getElementById('jadwalInfo');
+  if(ACTIVE_JADWAL){
+    if(wrap) wrap.classList.add('hidden');
+    if(info){
+      const j = ACTIVE_JADWAL;
+      const mk = j.mode==='mapel' ? (j.mapel||'-') : (j.kegiatan||'-');
+      info.textContent = `Jadwal aktif: ${j.name} • Mode: ${j.mode} • ${j.mode==='mapel'?'Mapel':'Kegiatan'}: ${mk} • Jam: ${j.jamKe||'-'} • PJ: ${j.penanggungJawab||'-'}${j.lokasi? ' • Lokasi: '+j.lokasi : ''}`;
+    }
+  }else{
+    if(wrap) wrap.classList.remove('hidden');
+    if(info){ info.textContent = 'Tidak ada jadwal aktif. Pilih jadwal di atas untuk mempercepat input.'; }
+  }
+}
+
+async function selectJadwalByName(name){
+  if(!name){ ACTIVE_JADWAL = null; updateJadwalUI(); return; }
+  const arr = await listTemplates();
+  const t = arr.find(x=>x.name===name);
+  if(!t){ alert('Jadwal tidak ditemukan'); return; }
+  ACTIVE_JADWAL = { ...t };
+  try{ localStorage.setItem('ACTIVE_JADWAL', t.name); }catch{}
+  updateJadwalUI();
+}
+
 async function renderTable(){
+  const tbody = document.getElementById('tbody');
+  if(!tbody){ return; }
   const rows = await listAbsenToday($('#tanggal').value || todayISO());
   // apply filters
   const q = ($('#filterQ')?.value || '').toLowerCase();
@@ -91,7 +129,6 @@ async function renderTable(){
   if(currentPage < 1) currentPage = 1;
   const startIdx = (currentPage - 1) * PAGE_SIZE;
   const pageRows = filtered.slice(startIdx, startIdx + PAGE_SIZE);
-  const tbody = $('#tbody');
   tbody.innerHTML = '';
   pageRows.forEach(r=>{
     const tr = document.createElement('tr');
@@ -110,7 +147,8 @@ async function renderTable(){
       </td>`;
     tbody.appendChild(tr);
   });
-  $('#rekapInfo').textContent = `${total} entri (hal ${currentPage}/${totalPages})`;
+  const infoEl = document.getElementById('rekapInfo');
+  if(infoEl){ infoEl.textContent = `${total} entri (hal ${currentPage}/${totalPages})`; }
   const pager = document.getElementById('pager');
   if(pager){ pager.classList.toggle('hidden', total <= PAGE_SIZE); }
   const pageInfo = document.getElementById('pageInfo');
@@ -177,14 +215,14 @@ async function renderTable(){
 }
 
 async function addAbsen({siswaId, nama, status}){
-  const mode = $('#mode').value;
+  const mode = ACTIVE_JADWAL?.mode || $('#mode').value;
   const tanggal = $('#tanggal').value || todayISO();
-  const jamKe = Number($('#jamKe').value||1);
-  const mapelVal = ($('#mapel').value||'').trim();
-  const kegiatanVal = ($('#kegiatan').value||'').trim();
+  const jamKe = Number(ACTIVE_JADWAL?.jamKe ?? ($('#jamKe').value||1));
+  const mapelVal = (ACTIVE_JADWAL?.mapel ?? ($('#mapel').value||'')).trim();
+  const kegiatanVal = (ACTIVE_JADWAL?.kegiatan ?? ($('#kegiatan').value||'')).trim();
   const waktu = timeNow();
-  const penanggungJawabVal = ($('#penanggungJawab').value||'').trim();
-  const lokasiVal = ($('#lokasi').value||'').trim();
+  const penanggungJawabVal = (ACTIVE_JADWAL?.penanggungJawab ?? ($('#penanggungJawab').value||'')).trim();
+  const lokasiVal = (ACTIVE_JADWAL?.lokasi ?? ($('#lokasi').value||'')).trim();
   const alasanVal = ($('#alasan').value||'').trim();
   const fotoInput = document.getElementById('foto');
   const fotoFile = fotoInput && fotoInput.files && fotoInput.files[0] ? fotoInput.files[0] : null;
@@ -204,6 +242,15 @@ async function addAbsen({siswaId, nama, status}){
 }
 
 function bindUI(){
+  // Jadwal selector
+  document.getElementById('btnSelectJadwal')?.addEventListener('click', async ()=>{
+    const name = (document.getElementById('jadwalInput')?.value||'').trim();
+    await selectJadwalByName(name);
+  });
+  document.getElementById('btnClearJadwal')?.addEventListener('click', ()=>{
+    ACTIVE_JADWAL = null; try{ localStorage.removeItem('ACTIVE_JADWAL'); }catch{}; updateJadwalUI();
+  });
+
   // toggle mode UI
   $('#mode').addEventListener('change', (e)=>{
     const m = e.target.value;
@@ -225,8 +272,9 @@ function bindUI(){
     $('#siswaId').value=''; $('#namaSiswa').value='';
   });
 
-  // export CSV lokal
-  $('#btnExportCSV').addEventListener('click', async ()=>{
+  // export CSV lokal (hapus tombol dari index; tetap tersedia di History)
+  const exportBtn = document.getElementById('btnExportCSV');
+  exportBtn && exportBtn.addEventListener('click', async ()=>{
     const rows = await listAbsenToday($('#tanggal').value || todayISO());
     const header = ['tanggal','mode','jamKe','mapel','kegiatan','siswaId','nama','status','waktu','penanggungJawab','lokasi','alasan','synced'];
     const csv = [header.join(','), ...rows.map(r=>header.map(h=>JSON.stringify(r[h]??'')).join(','))].join('\n');
@@ -238,19 +286,44 @@ function bindUI(){
   });
 
   // QR
-  $('#btnStartQR').addEventListener('click', async ()=>{
-    await startQR(async (decodedText)=>{
-      // Format QR: SISWAID|NAMASISWA  (contoh: S001|Budi Santoso)
-      const [siswaId,nama] = decodedText.split('|');
-      if(nama){
-        await addAbsen({siswaId, nama, status:'Hadir'});
+  const decoder = async (decodedText)=>{
+    const [siswaId,nama] = String(decodedText||'').split('|');
+    if(nama){ await addAbsen({ siswaId, nama, status: 'Hadir' }); }
+  };
+  async function ensureStartScan(){
+    if(SCAN_RUNNING) return;
+    try{ await startQR(decoder); SCAN_RUNNING = true; }catch(err){ console.warn('Start scan failed', err); }
+    const btn = document.getElementById('btnToggleScan');
+    if(btn) btn.textContent = 'Stop Scan';
+  }
+  async function ensureStopScan(){
+    if(!SCAN_RUNNING) return;
+    try{ await stopQR(); }catch(_){ }
+    SCAN_RUNNING = false;
+    const btn = document.getElementById('btnToggleScan');
+    if(btn) btn.textContent = 'Start Scan';
+  }
+  document.getElementById('btnToggleScan')?.addEventListener('click', async ()=>{
+    if(SCAN_RUNNING) await ensureStopScan(); else await ensureStartScan();
+  });
+  // Tabs
+  document.querySelectorAll('#absenTabs .tab-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const tab = btn.getAttribute('data-tab');
+      document.querySelectorAll('#absenTabs .tab-btn').forEach(b=> b.classList.toggle('active', b===btn));
+      const pm = document.getElementById('panel-manual');
+      const ps = document.getElementById('panel-scan');
+      if(tab==='scan'){
+        pm?.classList.add('hidden'); ps?.classList.remove('hidden'); await ensureStartScan();
+      }else{
+        ps?.classList.add('hidden'); pm?.classList.remove('hidden'); await ensureStopScan();
       }
     });
   });
-  $('#btnStopQR').addEventListener('click', stopQR);
 
   // Sync
-  $('#btnSync').addEventListener('click', async ()=>{
+  const btnSync = document.getElementById('btnSync');
+  btnSync && btnSync.addEventListener('click', async ()=>{
     const r = await syncNow();
     if(r?.error){
       if(r.reason === 'missing_or_invalid_url'){
@@ -330,43 +403,10 @@ function bindUI(){
   // Templates
   (async function populateTemplates(){
     try{
-      const templates = await listTemplates();
-      const dl = document.getElementById('templateList');
-      if(dl){ dl.innerHTML = templates.map(t=>`<option value="${t.name}"></option>`).join(''); }
-    }catch(err){ console.warn('Gagal memuat template', err); }
+      await populateJadwalList();
+    }catch(err){ console.warn('Gagal memuat jadwal', err); }
   })();
-  document.getElementById('btnApplyTemplate')?.addEventListener('click', async ()=>{
-    const name = (document.getElementById('templateInput')?.value || '').trim();
-    if(!name) return;
-    const arr = await listTemplates();
-    const t = arr.find(x=>x.name===name);
-    if(!t) { alert('Template tidak ditemukan'); return; }
-    if(t.mode){ $('#mode').value = t.mode; $('#mode').dispatchEvent(new Event('change')); }
-    if(t.mode==='mapel'){ $('#mapel').value = t.mapel||''; }
-    if(t.mode==='kegiatan'){ $('#kegiatan').value = t.kegiatan||''; }
-    if(t.jamKe){ $('#jamKe').value = t.jamKe; }
-    if(t.penanggungJawab){ $('#penanggungJawab').value = t.penanggungJawab; }
-    if(t.lokasi){ $('#lokasi').value = t.lokasi; }
-  });
-  document.getElementById('btnSaveTemplate')?.addEventListener('click', async ()=>{
-    const defaultName = document.getElementById('templateInput')?.value || '';
-    const name = prompt('Nama template', defaultName.trim());
-    if(!name) return;
-    const mode = $('#mode').value;
-    const obj = {
-      name: name.trim(),
-      mode,
-      mapel: mode==='mapel' ? ($('#mapel').value||'').trim() : '',
-      kegiatan: mode==='kegiatan' ? ($('#kegiatan').value||'').trim() : '',
-      jamKe: Number($('#jamKe').value||1),
-      penanggungJawab: ($('#penanggungJawab').value||'').trim(),
-      lokasi: ($('#lokasi').value||'').trim()
-    };
-    await upsertTemplate(obj);
-    const dl = document.getElementById('templateList');
-    if(dl){ const opt = document.createElement('option'); opt.value = obj.name; dl.appendChild(opt); }
-    alert('Template disimpan');
-  });
+  // no save template here; kelola jadwal di Pengaturan
 }
 
 window.addEventListener('DOMContentLoaded', async ()=>{
@@ -387,6 +427,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   }catch{}
   bindUI();
   watchNetwork();
+  try{ const last = localStorage.getItem('ACTIVE_JADWAL'); if(last){ await selectJadwalByName(last); } else { updateJadwalUI(); } }catch{ updateJadwalUI(); }
   renderTable();
   updateUnsyncedBadge();
 });

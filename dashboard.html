@@ -55,7 +55,7 @@
   <script>
     // Ensure latest SW (with versioned URL) takes over
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=19', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
+      navigator.serviceWorker.register('sw.js?v=20', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
     }
   </script>
 </head>
@@ -274,7 +274,7 @@
   </script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=19', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
+      navigator.serviceWorker.register('sw.js?v=20', { scope: './' }).then(reg=>{ try{ reg.update(); }catch(_){} });
     }
   </script>
 </body>

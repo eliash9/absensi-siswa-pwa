@@ -1,7 +1,7 @@
-const CACHE = 'absensi-cache-v19';
+const CACHE = 'absensi-cache-v20';
 const ASSETS_LOCAL = [
-  './','index.html', 'settings.html', 'panduan.html', 'dashboard.html', 'about.html', 'styles.css', 'manifest.webmanifest',
-  'js/db.js','js/app.js','js/sync.js','js/qr.js','js/settings.js','js/dashboard.js','js/ui.js',
+  './','index.html', 'history.html', 'settings.html', 'panduan.html', 'dashboard.html', 'about.html', 'styles.css', 'manifest.webmanifest',
+  'js/db.js','js/app.js','js/history.js','js/sync.js','js/qr.js','js/settings.js','js/dashboard.js','js/ui.js',
   'js/vendor/qrcode.min.js','js/vendor/qrcode-generator.min.js','js/vendor/dexie.min.js',
   'assets/icon-192.png','assets/icon-512.png'
 ];
